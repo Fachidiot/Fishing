@@ -2,29 +2,33 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using DG.Tweening;
+using TMPro;
 using UnityEngine;
+using UnityEngine.SocialPlatforms;
 using UnityEngine.UI;
 
 public class M2048Manager : BaseAppManager
 {
-    [SerializeField] private int width = 4;
-    [SerializeField] private int height = 4;
-    [SerializeField] private float scale = 200;
+    [SerializeField] private TMP_Text m_scoreTMP;
+    [SerializeField] private int m_width = 4;
+    [SerializeField] private int m_height = 4;
+    [SerializeField] private float m_scale = 300;
 
-    [SerializeField] private Node nodePrefab;
-    [SerializeField] private Block blockPrefab;
+    [SerializeField] private Node m_nodePrefab;
+    [SerializeField] private Block m_blockPrefab;
 
-    [SerializeField] private GameObject nodeParent;
+    [SerializeField] private GameObject m_nodeParent;
     [SerializeField] private List<BlockType> typeList;
     //[SerializeField] private float travelTime = 0.2f;
-    [SerializeField] private int windCondition = 2048;
+    [SerializeField] private int m_windCondition = 2048;
 
-    [SerializeField] private GameObject winScreen, loseScreen;
+    [SerializeField] private GameObject m_winScreen, m_loseScreen;
 
-    private List<Node> nodeList = new List<Node>();
-    private List<Block> blockList = new List<Block>();
-    private Game2048State state;
-    private int round;
+    private List<Node> m_nodeList = new List<Node>();
+    private List<Block> m_blockList = new List<Block>();
+    private Game2048State m_state;
+    private int m_round;
+    private int m_score = 0;
 
     private BlockType GetBlockTypeByValue(int _value) => typeList.First(t=>t.value == _value);
 
@@ -35,25 +39,26 @@ public class M2048Manager : BaseAppManager
 
     private void ChangeState(Game2048State _state)
     {
-        state = _state;
+        m_state = _state;
+        m_scoreTMP.text = m_score.ToString();
 
-        switch(state)
+        switch(m_state)
         {
             case Game2048State.GenerateLevel:
                 GenerateGrid();
                 break;
             case Game2048State.SpawningBlocks:
-                SpawnBlocks(round++ == 0 ? 2 : 1);
+                SpawnBlocks(m_round++ == 0 ? 2 : 1);
                 break;
             case Game2048State.WaitingInput:
                 break;
             case Game2048State.Moving:
                 break;
             case Game2048State.Win:
-                winScreen.SetActive(true);
+                m_winScreen.SetActive(true);
                 break;
             case Game2048State.Lose:
-                loseScreen.SetActive(true);
+                m_loseScreen.SetActive(true);
                 break;
             default:
                 break;
@@ -63,7 +68,7 @@ public class M2048Manager : BaseAppManager
     // Update is called once per frame
     void Update()
     {
-        if (state != Game2048State.WaitingInput)
+        if (m_state != Game2048State.WaitingInput)
             return;
 
         if (Input.GetKeyDown(KeyCode.LeftArrow))
@@ -78,14 +83,14 @@ public class M2048Manager : BaseAppManager
 
     void GenerateGrid()
     {
-        round = 0;
-        for (int x = 0; x < width; x++)
+        m_round = 0;
+        for (int x = 0; x < m_width; x++)
         {
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < m_height; y++)
             {
-                Node node = Instantiate(nodePrefab, nodeParent.transform);
-                node.GetComponent<RectTransform>().anchoredPosition = new Vector2(x * scale, y * scale);
-                nodeList.Add(node);
+                Node node = Instantiate(m_nodePrefab, m_nodeParent.transform);
+                node.GetComponent<RectTransform>().anchoredPosition = new Vector2(x * m_scale, y * m_scale);
+                m_nodeList.Add(node);
             }
         }
 
@@ -94,7 +99,7 @@ public class M2048Manager : BaseAppManager
 
     void SpawnBlocks(int _amount)
     {
-        List<Node> freeNodes = nodeList.Where(n => n.OccupiedBlock == null).OrderBy(b => UnityEngine.Random.value).ToList();
+        List<Node> freeNodes = m_nodeList.Where(n => n.OccupiedBlock == null).OrderBy(b => UnityEngine.Random.value).ToList();
 
         foreach (Node node in freeNodes.Take(_amount))
         {
@@ -107,23 +112,25 @@ public class M2048Manager : BaseAppManager
             return; 
         }
 
-        ChangeState(blockList.Any(b => b.value == windCondition) ? Game2048State.Win : Game2048State.WaitingInput);
+        ChangeState(m_blockList.Any(b => b.value == m_windCondition) ? Game2048State.Win : Game2048State.WaitingInput);
     }
 
     void SpawnBlock(Node _node, int _value)
     {
-        Block block = Instantiate(blockPrefab, new Vector3(_node.Pos.x, _node.Pos.y, 0), Quaternion.identity);
-        block.transform.SetParent(nodeParent.transform, false);
+        if (_value > m_score)
+            m_score = _value;
+        Block block = Instantiate(m_blockPrefab, new Vector3(_node.Pos.x, _node.Pos.y, 0), Quaternion.identity);
+        block.transform.SetParent(m_nodeParent.transform, false);
         block.Init(GetBlockTypeByValue(_value));
         block.SetBlock(_node);
-        blockList.Add(block);
+        m_blockList.Add(block);
     }
 
     void Shift(Vector2 _direction)
     {
         ChangeState(Game2048State.Moving);
 
-        List<Block> orderedBlocks = blockList.OrderBy(b => b.Pos.x).ThenBy(b => b.Pos.y).ToList();
+        List<Block> orderedBlocks = m_blockList.OrderBy(b => b.Pos.x).ThenBy(b => b.Pos.y).ToList();
         if (_direction == Vector2.right || _direction == Vector2.up) orderedBlocks.Reverse();
 
         foreach (Block block in orderedBlocks)
@@ -133,7 +140,7 @@ public class M2048Manager : BaseAppManager
             {
                 block.SetBlock(next);
 
-                Node possibleNode = GetNodeAtPosition(next.Pos + _direction * scale);
+                Node possibleNode = GetNodeAtPosition(next.Pos + _direction * m_scale);
                 if (possibleNode != null)
                 {
                     // We know a node is present.
@@ -176,7 +183,7 @@ public class M2048Manager : BaseAppManager
 
     bool CanMerge()
     {
-        List<Block> orderedBlocks = blockList.OrderBy(b => b.Pos.x).ThenBy(b => b.Pos.y).ToList();
+        List<Block> orderedBlocks = m_blockList.OrderBy(b => b.Pos.x).ThenBy(b => b.Pos.y).ToList();
 
         return CheckDirection(Vector2.left, orderedBlocks) || CheckDirection(Vector2.right, orderedBlocks)
             || CheckDirection(Vector2.up, orderedBlocks) || CheckDirection(Vector2.down, orderedBlocks); 
@@ -193,7 +200,7 @@ public class M2048Manager : BaseAppManager
             {
                 block.SetBlock(next);
 
-                Node possibleNode = GetNodeAtPosition(next.Pos + _direction * scale);
+                Node possibleNode = GetNodeAtPosition(next.Pos + _direction * m_scale);
                 if (possibleNode != null)
                 {
                     // If it's possible to merge
@@ -223,19 +230,19 @@ public class M2048Manager : BaseAppManager
 
     void RemoveBlock(Block block)
     {
-        blockList.Remove(block);
+        m_blockList.Remove(block);
         Destroy(block.gameObject);
     }
 
     Node GetNodeAtPosition(Vector2 _pos)
     {
-        return nodeList.FirstOrDefault(n=>n.Pos == _pos);
+        return m_nodeList.FirstOrDefault(n=>n.Pos == _pos);
     }
 
     public override void ResetApp()
     {
-        blockList.Clear();
-        nodeList.Clear();
+        m_blockList.Clear();
+        m_nodeList.Clear();
         ChangeState(Game2048State.GenerateLevel);
 
         return;

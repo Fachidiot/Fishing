@@ -37,6 +37,11 @@ public class CameraManager : BaseAppManager
         m_Titles = new List<string>();
     }
 
+    private void OnEnable()
+    {
+        m_Camera.SetActive(true);
+    }
+
     private void Update()
     {
         if (m_PhotoScreen.activeSelf)

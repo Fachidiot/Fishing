@@ -1,89 +1,99 @@
 using UnityEngine;
 
 /// <summary>
-/// ÀúÀå ½½·Ô UI 6°³¸¦ ÀÚµ¿À¸·Î »ı¼ºÇÏ°í Á¦¾îÇÏ´Â ¸Å´ÏÀú
-/// ÀúÀå ¸ğµå ¶Ç´Â ºÒ·¯¿À±â ¸ğµå ÀüÈ¯ °¡´É
+/// ì €ì¥ ìŠ¬ë¡¯ UI 6ê°œë¥¼ ìë™ìœ¼ë¡œ ìƒì„±í•˜ê³  ì œì–´í•˜ëŠ” ë§¤ë‹ˆì €
+/// ì €ì¥ ëª¨ë“œ ë˜ëŠ” ë¶ˆëŸ¬ì˜¤ê¸° ëª¨ë“œ ì „í™˜ ê°€ëŠ¥
 /// </summary>
 public class SaveSlotManager : MonoBehaviour
 {
-    [Header("½½·Ô ÇÁ¸®ÆÕ ¹× ¹èÄ¡ À§Ä¡")]
-    [SerializeField] private GameObject slotPrefab;           // SaveSlotUI ÇÁ¸®ÆÕ
-    [SerializeField] private Transform slotParent;            // ½½·Ô ¹èÄ¡ÇÒ ºÎ¸ğ ¿ÀºêÁ§Æ®
+    [Header("UI ìš”ì†Œ ë° í”„ë¦¬íŒ¹")]
+    [SerializeField] private GameObject slotPrefab = null;      // SaveSlotUI í”„ë¦¬íŒ¹
+    [SerializeField] private Transform slotParent = null;       // ìŠ¬ë¡¯ì´ ë°°ì¹˜ë  ë¶€ëª¨ íŠ¸ëœìŠ¤í¼
 
-    [Header("½½·Ô ¼ö")]
+    [Header("ì„¤ì •")]
     [SerializeField] private int slotCount = 6;
-
-    [Header("¸ğµå ¼³Á¤")]
     [SerializeField] private SaveSlotUI.SlotMode mode = SaveSlotUI.SlotMode.Save;
 
-    [Header("ÇöÀç ´ë»ç Á¤º¸")]
-    [SerializeField] private string currentEventName;
-    [SerializeField] private int currentDialogueId;
+    [Header("í˜„ì¬ ë°ì´í„° ìƒíƒœ (ì €ì¥ìš©)")]
+    [SerializeField] private string currentEventName = null;
+    [SerializeField] private int currentDialogueId = 0;
+
+    private void Awake()
+    {
+        Init();
+    }
 
     private void Start()
     {
         GenerateSlots();
     }
 
+    private void Init()
+    {
+        if (slotPrefab == null) Debug.LogError("[SaveSlotManager] slotPrefabì´ í• ë‹¹ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
+        if (slotParent == null) Debug.LogError("[SaveSlotManager] slotParentê°€ í• ë‹¹ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
+    }
 
-    // ½½·ÔµéÀ» »ı¼ºÇÏ°í ÃÊ±âÈ­ÇÕ´Ï´Ù.
+    // ìŠ¬ë¡¯ ìƒì„± ë° ì´ˆê¸°í™”
     private void GenerateSlots()
     {
+        if (slotPrefab == null || slotParent == null) return;
+
         for (int i = 0; i < slotCount; i++)
         {
             GameObject slotObj = Instantiate(slotPrefab, slotParent);
             SaveSlotUI slotUI = slotObj.GetComponent<SaveSlotUI>();
 
-            slotUI.Initialize(i, mode, OnSlotClicked);
+            if (slotUI != null)
+            {
+                slotUI.Initialize(i, mode, OnSlotClicked);
+            }
         }
     }
 
-
-    // ½½·Ô Å¬¸¯ ½Ã µ¿ÀÛ: ÀúÀå ¶Ç´Â ºÒ·¯¿À±â
-
+    // ìŠ¬ë¡¯ í´ë¦­ ì´ë²¤íŠ¸ í•¸ë“¤ëŸ¬
     private void OnSlotClicked(int slotIndex)
     {
         if (mode == SaveSlotUI.SlotMode.Save)
         {
-            if (string.IsNullOrEmpty(currentEventName))
-            {
-                Debug.LogWarning("[SaveSlotManager] ÀúÀå ½ÇÆĞ - ÀÌº¥Æ® ÀÌ¸§ ¾øÀ½");
-                return;
-            }
-
-            SMSManager.Instance.SaveDialogueSlot(currentEventName, currentDialogueId, slotIndex);
+            SaveLoadManager.Instance.SaveDialogue(currentEventName, currentDialogueId, slotIndex);
         }
         else if (mode == SaveSlotUI.SlotMode.Load)
         {
-            DialogueSaveData data = SMSManager.Instance.LoadDialogueSlot(slotIndex);
+            DialogueSaveData data = SaveLoadManager.Instance.LoadDialogue(slotIndex);
             if (data != null)
             {
-                // DialogueEvent ºÒ·¯¿Í¼­ DialogueController¿¡ Àü´Ş
-                DialogueEvent loadedEvent = Resources.Load<DialogueEvent>($"DialogueEvents/{data.dialogueEventName}");
-                if (loadedEvent != null)
-                {
-                    DialogueController controller = FindObjectOfType<DialogueController>();
-                    controller.StartDialogue(loadedEvent);
-                    controller.ProceedNext(data.currentId);
-                }
-                else
-                {
-                    Debug.LogWarning($"[SaveSlotManager] ÀÌº¥Æ® ÆÄÀÏ Ã£À» ¼ö ¾øÀ½: {data.dialogueEventName}");
-                }
+                LoadDialogueEvent(data);
             }
         }
     }
 
+    private void LoadDialogueEvent(DialogueSaveData data)
+    {
+        // DialogueEvent ë¡œë“œ ë° ì»¨íŠ¸ë¡¤ëŸ¬ ì—°ë™
+        DialogueEvent loadedEvent = Resources.Load<DialogueEvent>($"DialogueEvents/{data.dialogueEventName}");
+        if (loadedEvent != null)
+        {
+            // ë¦¬íŒ©í† ë§ëœ DialogueProviderë¥¼ í†µí•´ ì»¨íŠ¸ë¡¤ëŸ¬ì— ì ‘ê·¼
+            DialogueProvider provider = FindObjectOfType<DialogueProvider>();
+            if (provider != null && provider.Controller != null)
+            {
+                provider.Controller.StartDialogue(loadedEvent);
+                provider.Controller.ProceedNext(data.currentId);
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"[SaveSlotManager] ì´ë²¤íŠ¸ë¥¼ ë¡œë“œí•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤: {data.dialogueEventName}");
+        }
+    }
 
-    // ¿ÜºÎ¿¡¼­ ÇöÀç ´ë»ç Á¤º¸¸¦ ¼¼ÆÃÇÏ´Â ÇÔ¼ö
     public void SetCurrentDialogue(string eventName, int dialogueId)
     {
         currentEventName = eventName;
         currentDialogueId = dialogueId;
     }
 
-
-    // ½½·Ô ¸ğµå º¯°æ (Save <-> Load)
     public void SetMode(SaveSlotUI.SlotMode newMode)
     {
         mode = newMode;

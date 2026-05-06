@@ -8,10 +8,8 @@ public class ShortsManager : MonoBehaviour
     private Shorts_Layout[] m_Layouts;
     [SerializeField]
     private ScrollSnap m_SnapManager;
-    [SerializeField]
 
-
-    void Update()   
+    void Update()
     {
         switch (-m_SnapManager.GetCurrentItem())
         {

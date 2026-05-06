@@ -1,108 +1,142 @@
 using System.Collections;
 using UnityEngine;
-using TMPro; // UI ÅØ½ºÆ® Ç¥½Ã¿ë
+using TMPro; // UI í…ìŠ¤íŠ¸ í‘œì‹œìš©
 
 public class Player : MonoBehaviour
 {
     [SerializeField]
-    private DialogueEvent m_DialogueEvent; // ´ëÈ­ µ¥ÀÌÅÍ¸¦ ´ã°í ÀÖ´Â ScriptableObject
+    private DialogueEvent m_DialogueEvent = null; // ëŒ€í™” ë°ì´í„°ë¥¼ ë‹´ê³  ìˆëŠ” ScriptableObject
 
     [SerializeField]
-    private TMP_Text playerTextUI; // ½ÇÁ¦ È­¸é¿¡ Ãâ·ÂÇÒ ÅØ½ºÆ® UI (TextMeshPro »ç¿ë)
+    private TMP_Text playerTextUI = null; // ëŒ€í™”ì°½ì— ë„ìš¸ í…ìŠ¤íŠ¸ UI (TextMeshPro ì‚¬ìš©)
 
-    private int currentId = 2000; // ½ÃÀÛÇÒ ´ë»ç ID
-    private bool isTyping = false; // ÇöÀç Å¸ÀÌÇÎ ÁßÀÎÁö ¿©ºÎ
-    private bool isReadyForNext = false; // ´ÙÀ½ ´ë»ç·Î ³Ñ¾î°¥ ÁØºñ°¡ µÇ¾ú´ÂÁö ¿©ºÎ
+    private int currentId = 2000; // í˜„ì¬ ëŒ€ì‚¬ ID
+    private bool isTyping = false; // í˜„ì¬ íƒ€ì´í•‘ ì¤‘ì¸ì§€ ì—¬ë¶€
+    private bool isReadyForNext = false; // ë‹¤ìŒ ëŒ€ì‚¬ë¡œ ë„˜ì–´ê°ˆ ì¤€ë¹„ê°€ ë˜ì—ˆëŠ”ì§€ ì—¬ë¶€
 
     [SerializeField]
-    private bool introEnd = false;      //Ã³À½ ÀÎÆ®·Î À¯¹«
+    private bool introEnd = false;      // ì´ˆë°˜ ì¸íŠ¸ë¡œ ì¢…ë£Œ ì—¬ë¶€
 
-    private Coroutine typeCoroutine; // ÇöÀç ½ÇÇà ÁßÀÎ ÄÚ·çÆ¾ ÂüÁ¶
-    private string currentFullText = ""; // ÇöÀç Ãâ·ÂÇÒ ÀüÃ¼ ÅØ½ºÆ®
-    private string currentDisplayedText = ""; // ÇöÀç±îÁö Ãâ·ÂµÈ ÅØ½ºÆ®
+    private Coroutine typeCoroutine = null; // ëŒ€í™” íƒ€ì´í•‘ íš¨ê³¼ìš© ì½”ë£¨í‹´ ì°¸ì¡°
+    private string currentFullText = ""; // í˜„ì¬ ëŒ€ì‚¬ì˜ ì „ì²´ í…ìŠ¤íŠ¸
+    private string currentDisplayedText = ""; // í˜„ì¬ê¹Œì§€ ì¶œë ¥ëœ í…ìŠ¤íŠ¸
 
-    
-
-    // ¸Å ÇÁ·¹ÀÓ¸¶´Ù Å° ÀÔ·Â Ã¼Å©
-    private void Update()
+    private void Awake()
     {
-        if (Input.GetKeyDown(KeyCode.E))
-        {
-            if (isTyping)
-            {
-                // Å¸ÀÌÇÎ ÁßÀÏ ¶§ E¸¦ ´©¸£¸é Áï½Ã ÀüÃ¼ ÅØ½ºÆ®¸¦ Ãâ·Â
-                isTyping = false;
-                StopCoroutine(typeCoroutine);
-                ShowFullTextImmediately();
-            }
-            else if (isReadyForNext)
-            {
-                // ÅØ½ºÆ®°¡ ´Ù Ãâ·ÂµÈ ÈÄ E¸¦ ´©¸£¸é ´ÙÀ½ ´ë»ç·Î ÁøÇà
-                ProceedNext();
-            }
-        }
+        Init();
     }
 
-    // °ÔÀÓ ½ÃÀÛ ½Ã ÀÎÆ®·Î È®ÀÎ À¯¹« ÈÄ ÅØ½ºÆ® Ãâ·Â
     private void Start()
     {
         if (introEnd == true) ProceedNext();
     }
 
-    // ÇöÀç IDÀÇ ´ë»ç¸¦ ºÒ·¯¿Í Å¸ÀÌÇÎ ½ÃÀÛ
+    private void OnEnable()
+    {
+        BindInput();
+    }
+
+    private void OnDisable()
+    {
+        UnbindInput();
+    }
+
+    private void Init()
+    {
+        if (playerTextUI == null)
+        {
+            playerTextUI = GetComponentInChildren<TMP_Text>();
+        }
+
+        if (playerTextUI == null)
+        {
+            Debug.LogError("[Player] playerTextUIê°€ í• ë‹¹ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
+        }
+    }
+
+    private void BindInput()
+    {
+        if (InputManager.Instance != null)
+        {
+            InputManager.Instance.OnInteractPressed += OnInteractPressed;
+        }
+    }
+
+    private void UnbindInput()
+    {
+        if (InputManager.Instance != null)
+        {
+            InputManager.Instance.OnInteractPressed -= OnInteractPressed;
+        }
+    }
+
+    private void OnInteractPressed()
+    {
+        if (isTyping)
+        {
+            SkipTyping();
+        }
+        else if (isReadyForNext)
+        {
+            ProceedNext();
+        }
+    }
+
+    private void SkipTyping()
+    {
+        isTyping = false;
+        if (typeCoroutine != null) StopCoroutine(typeCoroutine);
+        ShowFullTextImmediately();
+    }
+
     private void ProceedNext()
     {
+        if (m_DialogueEvent == null) return;
+
         isReadyForNext = false;
 
-        // ID¿¡ ÇØ´çÇÏ´Â ´ë»ç Ã£±â
         var dialogue = m_DialogueEvent.lines.Find(d => d.id == currentId);
         if (dialogue == null)
         {
-            Debug.LogWarning($"ID {currentId}¿¡ ÇØ´çÇÏ´Â ´ë»ç°¡ ¾ø½À´Ï´Ù.");
+            Debug.LogWarning($"ID {currentId}ì— í•´ë‹¹í•˜ëŠ” ëŒ€ì‚¬ê°€ ì—†ìŠµë‹ˆë‹¤.");
             return;
         }
 
-        // ÅØ½ºÆ® ÃÊ±âÈ­
         currentFullText = dialogue.text;
         currentDisplayedText = "";
 
-        // ÄÚ·çÆ¾À¸·Î Å¸ÀÌÇÎ È¿°ú ½ÃÀÛ
         typeCoroutine = StartCoroutine(TypeTextCoroutine(dialogue.text, dialogue.nextId));
     }
 
-    // Å¸ÀÌÇÎ È¿°ú ±¸Çö ÄÚ·çÆ¾
     private IEnumerator TypeTextCoroutine(string text, int nextId)
     {
         isTyping = true;
 
-        // ÇÑ ±ÛÀÚ¾¿ Ãâ·Â
         for (int i = 0; i < text.Length; i++)
         {
-            if (!isTyping)
-                yield break; // Áß°£¿¡ Á¾·áµÇ¸é ÄÚ·çÆ¾ Á¾·á
+            if (!isTyping) yield break;
 
             currentDisplayedText += text[i];
-            playerTextUI.text = currentDisplayedText; // UI¿¡ ÅØ½ºÆ® ¹İ¿µ
+            playerTextUI.text = currentDisplayedText;
 
-            yield return new WaitForSeconds(0.03f); // Å¸ÀÌÇÎ ¼Óµµ Á¶Àı
+            yield return new WaitForSeconds(0.03f);
         }
 
         isTyping = false;
         isReadyForNext = true;
-        currentId = nextId; // ´ÙÀ½ ´ë»ç ID ¼³Á¤
+        currentId = nextId;
     }
 
-    // ÅØ½ºÆ® ÀüÃ¼ Áï½Ã Ç¥½Ã
     private void ShowFullTextImmediately()
     {
         currentDisplayedText = currentFullText;
-        playerTextUI.text = currentDisplayedText; // UI¿¡ ÅØ½ºÆ® ¹İ¿µ
+        if (playerTextUI != null) playerTextUI.text = currentDisplayedText;
         isReadyForNext = true;
     }
 
     public void introEvent()
     {
-        Debug.Log("ÀÎÆ®·Î ÅØ½ºÆ® ");
+        Debug.Log("ì¸íŠ¸ë¡œ ì´ë²¤íŠ¸ í˜¸ì¶œ");
         introEnd = true;
     }
 }

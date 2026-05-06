@@ -1,325 +1,177 @@
 using System;
 using System.Globalization;
-using System.Threading;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
-public enum Language
+public enum Language { English, Korean, Japanese }
+public enum Status { Idle, Notification, Control, RunApp }
+
+/// <summary>
+/// 핸드폰 OS의 핵심 로직을 담당하는 순수 C# 매니저 클래스입니다.
+/// </summary>
+public class OSManager : IDisposable
 {
-    English,
-    Korean,
-    Japanese
-}
+    private static OSManager instance = null;
 
-public enum Status
-{
-    Idle,
-    Notification,
-    Control,
-    RunApp
-}
+    private OSProvider provider = null;
+    private Language language = Language.Korean;
+    private Status currentStatus = Status.Idle;
+    private bool isLocked = true;
+    private bool isDisposed = false;
+    
+    private Profile profile = null;
+    private ScrollSnap lockSnap = null;
+    private ScrollSnap controlSnap = null;
 
-public class OSManager : Subject
-{
-    private static OSManager m_Instance;
-    public static OSManager Instance { get { return m_Instance; } }
+    public event Action OnLanguageChanged = null;
 
-    [Header("Screens")]
-    [SerializeField] private Animator m_mainAnimator;
-    [SerializeField] private GameObject m_mainScreen;
-    [SerializeField] private GameObject m_lockScreen;
-    [SerializeField] private GameObject m_controlScreen;
-    [SerializeField] private Camera m_BackgroundCaptureCamera;
-    [Header("Background")]
-    [SerializeField] private BackgroundManager m_background;
-
-    [Header("System Language")]
-    [SerializeField]
-    private Language m_language;
-
-    [SerializeField]
-    private bool m_isLocked = true;
-    [SerializeField]
-    private Status m_currentStatus;
-
-    [SerializeField]
-    private GameObject m_bottombar;
-
-    // TODO : 추후에 Control Screen 스크립트로 받아오자
-    [Header("Text Mesh Pro")]
-    [SerializeField]
-    private TMP_Text m_TDate;
-    [SerializeField]
-    private TMP_Text m_TLanguage;
-    [SerializeField]
-    private bool m_Debug;
-
-    private Profile m_profile;
-
-    private ScrollSnap m_lockSnap;
-    private ScrollSnap m_controlSnap;
-
-    private void Awake()
+    public static OSManager Instance
     {
-        if (m_Instance != null)
-        {   // Singleton
-            m_Instance.transform.parent.gameObject.SetActive(true);
-            Destroy(transform.parent.gameObject);
-            return;
+        get
+        {
+            if (instance == null) instance = new OSManager();
+            return instance;
         }
-        m_Instance = this;
-        DontDestroyOnLoad(gameObject.transform.parent.gameObject);
-
-        SetDate(m_language);
-        m_lockSnap = m_lockScreen.GetComponent<ScrollSnap>();
-        m_controlSnap = m_controlScreen.GetComponent<ScrollSnap>();
-
-        // Temp Profile
-        m_profile = new Profile("User", "Sprites/Icons/channels4_profile");
     }
 
-    private void Update()
+    private OSManager()
     {
+        profile = new Profile("User", "Sprites/Icons/channels4_profile");
+    }
+
+    public void Initialize(OSProvider provider)
+    {
+        this.provider = provider;
+        if (provider.LockScreen != null) lockSnap = provider.LockScreen.GetComponent<ScrollSnap>();
+        if (provider.ControlScreen != null) controlSnap = provider.ControlScreen.GetComponent<ScrollSnap>();
+        SetDate(language);
+        Debug.Log("[OSManager] 초기화 완료");
+    }
+
+    public void Dispose()
+    {
+        if (isDisposed) return;
+        OnLanguageChanged = null;
+        isDisposed = true;
+    }
+
+    public void OnUpdate()
+    {
+        if (provider == null) return;
         CheckLockStatus();
         CheckStatus();
 
-        if (m_isLocked)
-        {   // screen is locked.
-            m_mainAnimator.SetBool("IsLocked", m_isLocked);
-        }
-        else
-        {   // screen is unlock.
-            m_mainAnimator.SetBool("IsLocked", m_isLocked);
-        }
+        if (provider.MainAnimator != null)
+            provider.MainAnimator.SetBool("IsLocked", isLocked);
 
-        switch (m_currentStatus)
-        {
-            case Status.Idle:
-                //m_bottombar.SetActive(false);
-                m_mainScreen.SetActive(true);
-                break;
-            case Status.Notification:
-                m_bottombar.SetActive(true);
-                m_mainScreen.SetActive(false);
-                break;
-            case Status.Control:
-                m_bottombar.SetActive(true);
-                m_mainScreen.SetActive(false);
-                break;
-            case Status.RunApp:
-                m_BackgroundCaptureCamera.gameObject.SetActive(true);
-                m_bottombar.SetActive(true);
-                m_mainScreen.SetActive(false);
-                break;
-        }
+        UpdateUIByStatus();
     }
 
-    public Profile GetProfile()
+    private void UpdateUIByStatus()
     {
-        return m_profile;
+        if (provider == null) return;
+        switch (currentStatus)
+        {
+            case Status.Idle:
+                if (provider.BottomBar != null) provider.BottomBar.SetActive(true);
+                provider.MainScreen.SetActive(true);
+                break;
+            case Status.Notification:
+            case Status.Control:
+                if (provider.BottomBar != null) provider.BottomBar.SetActive(true);
+                provider.MainScreen.SetActive(false);
+                break;
+            case Status.RunApp:
+                if (provider.BackgroundCaptureCamera != null) provider.BackgroundCaptureCamera.gameObject.SetActive(true);
+                if (provider.BottomBar != null) provider.BottomBar.SetActive(true);
+                provider.MainScreen.SetActive(false);
+                break;
+        }
     }
 
     private void CheckLockStatus()
     {
-        if (m_isLocked && m_lockSnap.GetCurrentItem() == 1)
-        {
-            m_isLocked = false;
-        }
+        if (lockSnap != null && isLocked && lockSnap.GetCurrentItem() == 1)
+            isLocked = false;
     }
 
     private void CheckStatus()
     {
-        if (m_controlSnap.GetCurrentItem() == 2)
+        if (controlSnap != null && controlSnap.GetCurrentItem() == 2)
         {
-            m_currentStatus = Status.Control;
+            currentStatus = Status.Control;
             return;
         }
-        else if (m_lockSnap.GetCurrentItem() == 2)
+        else if (lockSnap != null && lockSnap.GetCurrentItem() == 2)
         {
-            m_currentStatus = Status.Notification;
+            currentStatus = Status.Notification;
             return;
         }
-        if (m_currentStatus == Status.RunApp)
-            return;
-        m_currentStatus = Status.Idle;
-    }
-    public void RunApp()
-    {
-        m_currentStatus = Status.RunApp;
-    }
-    public void EndApp()
-    {
-        m_currentStatus = Status.Idle;
+        if (currentStatus == Status.RunApp) return;
+        currentStatus = Status.Idle;
     }
 
-    #region Language
-    public void SetLanguage(int language)
+    public void RunApp() => currentStatus = Status.RunApp;
+    public void EndApp() => currentStatus = Status.Idle;
+    public Language GetLanguage() => language;
+
+    public void SetLanguage(int langIndex)
     {
-        m_language = (Language)language;
-        SetDate(m_language);
-        NotifyObservers();
+        language = (Language)langIndex;
+        SetDate(language);
+        OnLanguageChanged?.Invoke();
     }
 
-    public Language GetLanguage()
-    {
-        return m_language;
-    }
+    public void ChangeBackground(int index) => provider.Background?.UpdateBackground(index);
+    public Profile GetProfile() => profile;
 
-    #endregion
-    #region Screen_Controls
-    public void ChangeBackground(int index)
-    {
-        m_background.UpdateBackground(index);
-    }
-    public void MainScreenActive(bool active)
-    {
-        m_mainScreen.gameObject.SetActive(active);
-    }
-    public void BackgroundActive(bool active)
-    {
-        m_background.gameObject.SetActive(active);
-    }
-    #endregion
-    #region Times
     public string GetTime()
     {
-        string time = TimeUtils.GetHour();
-        time += ":" + TimeUtils.GetHour();
-        return time;
-    }
-    private void SetDate(Language language)
-    {
-        m_TDate.text = TimeUtils.GetDate(GetCulture(language));
-    }
-    private CultureInfo GetCulture(Language language)
-    {
-        switch (language)
-        {
-            case Language.English:
-                return new CultureInfo("en-US");
-            case Language.Korean:
-                return new CultureInfo("ko-KR");
-            case Language.Japanese:
-                return new CultureInfo("ja-JP");
-            default:
-                return new CultureInfo("en-US");
-        }
+        return DateTime.Now.ToString("HH:mm");
     }
 
-    #endregion
+    private void SetDate(Language lang)
+    {
+        if (provider != null && provider.TDate != null)
+            provider.TDate.text = TimeUtils.GetDate(GetCulture(lang));
+    }
+
+    private CultureInfo GetCulture(Language lang) => lang switch
+    {
+        Language.English => new CultureInfo("en-US"),
+        Language.Korean => new CultureInfo("ko-KR"),
+        Language.Japanese => new CultureInfo("ja-JP"),
+        _ => new CultureInfo("en-US")
+    };
 }
 
-public class TimeUtils
+public static class TimeUtils
 {
     public static string GetDate(CultureInfo cultureInfo)
     {
-        switch (cultureInfo.TwoLetterISOLanguageName)
+        return cultureInfo.TwoLetterISOLanguageName switch
         {
-            case "en":
-                return GetDayOfWeek(cultureInfo) + ", " + GetMonth(cultureInfo) + " " + GetDay(cultureInfo);
-            case "ja":
-                return GetMonth(cultureInfo) + GetDay(cultureInfo) + GetDayOfWeek(cultureInfo);
-            case "ko":
-                return GetMonth(cultureInfo) + " " + GetDay(cultureInfo) + " " + GetDayOfWeek(cultureInfo);
-            default:
-                return null;
-        }
+            "en" => $"{DateTime.Now:dddd, MMMM dd}",
+            "ja" => $"{DateTime.Now:MM}月{DateTime.Now:dd}일{GetJapaneseDayOfWeek(DateTime.Now.DayOfWeek)}",
+            "ko" => $"{DateTime.Now:MM}월 {DateTime.Now:dd}일 {GetKoreanDayOfWeek(DateTime.Now.DayOfWeek)}",
+            _ => null
+        };
     }
 
-    public static string GetMonth(CultureInfo cultureInfo)
+    private static string GetKoreanDayOfWeek(DayOfWeek day) => day switch
     {
-        switch (cultureInfo.TwoLetterISOLanguageName)
-        {
-            case "en":
-                return DateTime.Now.ToString(("MM"));
-            case "ja":
-                return DateTime.Now.ToString(("MM")) + "月";
-            case "ko":
-                return DateTime.Now.ToString(("MM")) + "월";
-            default:
-                return null;
+        DayOfWeek.Monday => "월요일", DayOfWeek.Tuesday => "화요일", DayOfWeek.Wednesday => "수요일",
+        DayOfWeek.Thursday => "목요일", DayOfWeek.Friday => "금요일", DayOfWeek.Saturday => "토요일",
+        DayOfWeek.Sunday => "일요일", _ => null
+    };
 
-        }
-    }
-
-    public static string GetDay(CultureInfo cultureInfo)
+    private static string GetJapaneseDayOfWeek(DayOfWeek day) => day switch
     {
-        switch (cultureInfo.TwoLetterISOLanguageName)
-        {
-            case "en":
-                return DateTime.Now.ToString(("dd"));
-            case "ja":
-                return DateTime.Now.ToString(("dd")) + "日";
-            case "ko":
-                return DateTime.Now.ToString(("dd")) + "일";
-            default:
-                return null;
+        DayOfWeek.Monday => "月曜日", DayOfWeek.Tuesday => "火曜日", DayOfWeek.Wednesday => "水曜日",
+        DayOfWeek.Thursday => "木曜日", DayOfWeek.Friday => "金曜日", DayOfWeek.Saturday => "土曜日",
+        DayOfWeek.Sunday => "日요일", _ => null
+    };
 
-        }
-    }
-
-    public static string GetDayOfWeek(CultureInfo cultureInfo)
-    {
-        switch (cultureInfo.TwoLetterISOLanguageName)
-        {
-            case "en":
-                return DateTime.Now.DayOfWeek.ToString();
-            case "ja":
-                switch (DateTime.Now.DayOfWeek)
-                {
-                    case DayOfWeek.Monday:
-                        return "月曜日";
-                    case DayOfWeek.Tuesday:
-                        return "火曜日";
-                    case DayOfWeek.Wednesday:
-                        return "水曜日";
-                    case DayOfWeek.Thursday:
-                        return "木曜日";
-                    case DayOfWeek.Friday:
-                        return "金曜日";
-                    case DayOfWeek.Saturday:
-                        return "土曜日";
-                    case DayOfWeek.Sunday:
-                        return "日曜日";
-                    default:
-                        return null;
-                }
-            case "ko":
-                switch (DateTime.Now.DayOfWeek)
-                {
-                    case DayOfWeek.Monday:
-                        return "월요일";
-                    case DayOfWeek.Tuesday:
-                        return "화요일";
-                    case DayOfWeek.Wednesday:
-                        return "수요일";
-                    case DayOfWeek.Thursday:
-                        return "목요일";
-                    case DayOfWeek.Friday:
-                        return "금요일";
-                    case DayOfWeek.Saturday:
-                        return "토요일";
-                    case DayOfWeek.Sunday:
-                        return "일요일";
-                    default:
-                        return null;
-                }
-            default:
-                return null;
-        }
-    }
-
-    public static string GetHour()
-    {
-        if (TimeFormat.Army == SystemSetting.Instance.GetTimeSetting())
-            return DateTime.Now.ToString(("HH"));
-        else
-            return DateTime.Now.ToString(("hh"));
-    }
-
-    public static string GetMinute()
-    {
-        return DateTime.Now.ToString(("mm"));
-    }
+    public static string GetHour() => DateTime.Now.ToString("HH");
+    public static string GetMinute() => DateTime.Now.ToString("mm");
 }

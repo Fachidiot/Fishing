@@ -1,54 +1,65 @@
-
 using UnityEngine;
 
+/// <summary>
+/// 게임 전체의 UI 및 핸드폰 활성화/비활성화를 관리하는 컴포넌트입니다.
+/// </summary>
 public class UIManager : MonoBehaviour
 {
-    [SerializeField]
-    private GameObject m_OptionUI;
-    [SerializeField]
-    private GameObject m_PauseUI;
+    [SerializeField] private GameObject m_OptionUI = null;
+    [SerializeField] private GameObject m_PauseUI = null;
+    [SerializeField] private GameObject m_TutorialUI = null;
+    [SerializeField] private PhoneController m_PhoneController = null;
+
     private bool m_Paused = false;
-    [SerializeField]
-    private GameObject m_TutorialUI;
     private bool m_Init = false;
-    [SerializeField]
-    private GameObject m_Phone;
     private bool m_UsePhone = false;
 
-    void Update()
+    private void Start()
     {
-        if (m_Phone == null)
-            m_Phone = OSManager.Instance.transform.parent.gameObject;
-
-        Inputs();
+        // 신규 InputManager 이벤트 구독
+        if (InputManager.Instance != null)
+        {
+            InputManager.Instance.OnSubmitPressed += HandleSubmit;
+            InputManager.Instance.OnCancelPressed += HandleCancel;
+        }
     }
 
-    private void Inputs()
+    private void OnDestroy()
     {
-        if (Input.GetKeyDown(KeyCode.Return))
+        if (InputManager.Instance != null)
         {
-            if (!m_Init)
-            {
-                m_TutorialUI.SetActive(false);
-                m_Init = true;
-            }
-            m_UsePhone = !m_UsePhone;
-            if (m_UsePhone)
-                m_Phone.GetComponent<PhoneController>().Enable();
-            else
-                m_Phone.GetComponent<PhoneController>().Disable();
+            InputManager.Instance.OnSubmitPressed -= HandleSubmit;
+            InputManager.Instance.OnCancelPressed -= HandleCancel;
+        }
+    }
+
+    private void HandleSubmit()
+    {
+        if (!m_Init)
+        {
+            if (m_TutorialUI != null) m_TutorialUI.SetActive(false);
+            m_Init = true;
         }
 
-        if (Input.GetKeyDown(KeyCode.Escape))
+        m_UsePhone = !m_UsePhone;
+        
+        if (m_PhoneController != null)
         {
-            if (m_OptionUI.activeSelf)
-                m_OptionUI.SetActive(false);
-            else
-            {
-                if (m_Paused == m_PauseUI.activeSelf)
-                    m_Paused = !m_Paused;
-                m_PauseUI.SetActive(m_Paused);
-            }
+            if (m_UsePhone) m_PhoneController.Enable();
+            else m_PhoneController.Disable();
+        }
+    }
+
+    private void HandleCancel()
+    {
+        if (m_OptionUI != null && m_OptionUI.activeSelf)
+        {
+            m_OptionUI.SetActive(false);
+        }
+        else if (m_PauseUI != null)
+        {
+            m_Paused = !m_Paused;
+            m_PauseUI.SetActive(m_Paused);
         }
     }
 }

@@ -1,165 +1,46 @@
 using System.Collections.Generic;
 using UnityEngine;
-using TMPro;
-using UnityEngine.UI;
-using System;
+using PixelCrushers.DialogueSystem;
 
 /// <summary>
-/// ÀÎ°ÔÀÓ ³»¿¡¼­ Ãâ·ÂµÇ´Â ´ë»ç Èå¸§À» Á¦¾îÇÏ´Â ÄÁÆ®·Ñ·¯
-/// ÇÃ·¹ÀÌ¾î ½ÃÁ¡ ³»·¹ÀÌ¼Ç or ÄÆ¾À ´ë»ç µî¿¡ »ç¿ë
+/// ì¸ê²Œì„ ëŒ€í™”ì˜ í•µì‹¬ ë¡œì§ì„ ë‹´ë‹¹í•˜ëŠ” í´ë˜ìŠ¤ì…ë‹ˆë‹¤.
+/// Dialogue System for Unityë¥¼ ë˜í•‘í•˜ì—¬ ì‚¬ìš©í•©ë‹ˆë‹¤.
 /// </summary>
-public class IngameDialogueController : MonoBehaviour
+public class IngameDialogueController
 {
-    [Header("UI ¸Å´ÏÀú ÂüÁ¶")]
-    [SerializeField] private IngameDialogueUIManager ui;
+    private IngameDialogueUIManager ui = null;
+    private bool readyForNext = false;
 
-    [Header("´ëÈ­ ÀÌº¥Æ® µ¥ÀÌÅÍ")]
-    [SerializeField] private DialogueEvent eventData;
+    public bool ReadyForNext => readyForNext;
 
-    private Dictionary<int, Dialogue> map;   // ID -> Dialogue ¸Ê
-    private int currentId;                   // ÇöÀç ´ëÈ­ ID
-    private bool readyForNext = false;       // ´ÙÀ½ ´ë»ç·Î ³Ñ¾î°¥ ÁØºñ ¿Ï·á ¿©ºÎ
-
-    private void Update()
+    public void Initialize(IngameDialogueUIManager uiManager)
     {
-        if (!ui.IsTyping())
-        {
-            if (Input.GetKeyDown(KeyCode.E) /*|| Input.GetMouseButtonDown(0)*/)
-            {
-                if (readyForNext)
-                {
-                    Debug.Log("ÀÔ·Â ¼º°ø ´ë»ç Ãâ·ÂÇØ¾ßÇÔ");
-                    ProceedNext();
-                }
-                else
-                {
-                    // ui.SkipTyping(); // ÀÔ·Â ½Ã Å¸ÀÌÇÎ ¸ğµÎ Ãâ·Â
-                }
-            }
-        }
+        this.ui = uiManager;
+        Debug.Log("[IngameDialogueController] Dialogue System ì—°ë™ ëª¨ë“œë¡œ ì´ˆê¸°í™” ì™„ë£Œ");
     }
 
-    /// <summary>
-    /// ´ëÈ­¸¦ ½ÃÀÛÇÏ´Â ÇÔ¼ö - ¿ÜºÎ¿¡¼­ È£ÃâµÊ
-    /// </summary>
     public void StartDialogue(DialogueEvent e)
     {
-        eventData = e;
-        map = new Dictionary<int, Dialogue>();
-        foreach (var d in e.lines)
-            map[d.id] = d;
+        if (e == null) return;
 
-        currentId = e.lines[0].id;
-        Debug.Log($"[StartDialogue] Ã¹ ´ë»ç ID: {currentId}");
-        ShowLine(map[currentId]);
+        // ScriptableObjectì˜ ì´ë¦„ì„ ëŒ€í™”ë°© ì´ë¦„ìœ¼ë¡œ ê°„ì£¼í•˜ì—¬ ì‹œì‘
+        // (Dialogue Databaseì— í•´ë‹¹ ì´ë¦„ì˜ ëŒ€í™”ê°€ ë“±ë¡ë˜ì–´ ìˆì–´ì•¼ í•¨)
+        DialogueManager.StartConversation(e.name);
+        Debug.Log($"[IngameDialogueController] ëŒ€í™” ì‹œì‘ ì‹œë„: {e.name}");
     }
 
-    /// <summary>
-    /// ÇØ´ç IDÀÇ ´ë»ç¸¦ Ãâ·ÂÇÏ°í, ¼±ÅÃÁö ¶Ç´Â ´ÙÀ½À¸·Î ÁøÇàÇÒÁö °áÁ¤
-    /// </summary>
-    private void ShowLine(Dialogue d)
+    public void ProceedNext()
     {
-        Debug.Log($"[ShowLine] ID: {d.id}, speaker: {d.speaker}, text: {d.text}, tag: {d.tag}");
-        readyForNext = false;
-
-        string type = d.type?.ToLowerInvariant();      // system, etc.
-        string speaker = d.speaker?.ToLowerInvariant();
-        string tag = d.tag?.ToLowerInvariant();         // ÅÂ±× ¼Ò¹®ÀÚ Ã³¸®
-
-        // ¸Ş½ÃÁö ÅÂ±× ½ºÅµ Ã³¸®
-        if (tag == "app:message_start" || tag == "app:message_end")
+        // Dialogue Systemì€ ìì²´ì ìœ¼ë¡œ ì…ë ¥ì„ ì²˜ë¦¬í•˜ê±°ë‚˜ 
+        // Continue ì´ë²¤íŠ¸ë¥¼ í†µí•´ ë‹¤ìŒìœ¼ë¡œ ë„˜ì–´ê°
+        if (DialogueManager.isConversationActive)
         {
-            Debug.Log($"[Ingame] ÅÂ±× {tag} ¡æ ½ºÅµÇÏ°í ´ÙÀ½ ´ë»ç·Î");
-            ProceedToNextLine();  // ´ÙÀ½ ´ë»ç·Î ¹Ù·Î ÀÌµ¿
-            return;
-        }
-
-        // ±¸Çö ¿¹Á¤ ÅÂ±× ·Î±× Ãâ·Â
-        if (tag == "dialogue_stop" || tag == "app:alarm" || tag == "app:cameraqr")
-        {
-            Debug.Log($"[IngameDialogueController] Ã³¸® ´ë±â ÅÂ±× °¨ÁöµÊ: {tag}");
-            return;
-        }
-
-        // ½Ã½ºÅÛ ¸Ş½ÃÁö Ãâ·Â
-        if (type == "system")
-        {
-            ui.ShowSystemMessage(d.text, () =>
-            {
-                HandleNextStep(d);
-            });
-            return;
-        }
-
-        // ÀÏ¹İ ¸Ş½ÃÁö Ãâ·Â
-        ui.ShowMessage(d.text, () =>
-        {
-            HandleNextStep(d);
-        });
-    }
-
-
-    /// <summary>
-    /// ´ÙÀ½ ¼±ÅÃÁö, ID ÁøÇà ºĞ±â °øÅë Ã³¸®
-    /// </summary>
-    private void HandleNextStep(Dialogue d)
-    {
-        if (!string.IsNullOrEmpty(d.choices))
-        {
-            ui.ShowChoices(ParseChoices(d.choices), id =>
-            {
-                ui.HideChoices();
-                currentId = id;
-                ShowLine(map[id]);
-            });
-        }
-        else if (d.nextId != 0)
-        {
-            readyForNext = true;
-        }
-        else
-        {
-            ui.HideChoices();
+            DialogueManager.instance.SendMessage("OnContinueConversation", SendMessageOptions.DontRequireReceiver);
         }
     }
 
-    private void ProceedNext()
-    {
-        if (map.ContainsKey(currentId) && map[currentId].nextId != 0)
-        {
-            Debug.Log("proceedNext ÀÌµ¿ ¿Ï·á");
-            currentId = map[currentId].nextId;
-            ShowLine(map[currentId]);
-        }
-    }
     public void ProceedToNextLine()
     {
-        if (map.ContainsKey(currentId) && map[currentId].nextId != 0)
-        {
-            Debug.Log("[IngameDialogueController] ProceedToNextLine() ¡æ ´ÙÀ½ ´ë»ç Ãâ·Â");
-            currentId = map[currentId].nextId;
-            ShowLine(map[currentId]);
-        }
-        else
-        {
-            Debug.LogWarning("[IngameDialogueController] ´ÙÀ½ ´ë»ç°¡ ¾ø°Å³ª À¯È¿ÇÏÁö ¾ÊÀ½");
-        }
-    }
-
-
-
-    private List<(string, int)> ParseChoices(string raw)
-    {
-        var list = new List<(string, int)>();
-        foreach (var s in raw.Split(','))
-        {
-            var parts = s.Trim().Split(':');
-            if (parts.Length == 2 && int.TryParse(parts[1], out int id))
-            {
-                string choiceText = parts[0].Trim().Trim('[', ']', '"');
-                list.Add((choiceText, id));
-            }
-        }
-        return list;
+        ProceedNext();
     }
 }

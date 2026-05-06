@@ -1,49 +1,79 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public class GameFlowManager : MonoBehaviour
+/// <summary>
+/// ê²Œì„ì˜ íë¦„ì„ ê´€ë¦¬í•˜ëŠ” ë§¤ë‹ˆì € í´ë˜ìŠ¤ì…ë‹ˆë‹¤.
+/// MonoBehaviourë¥¼ ìƒì†ë°›ì§€ ì•Šìœ¼ë©° AppEntryPointì—ì„œ ì´ˆê¸°í™”ë©ë‹ˆë‹¤.
+/// </summary>
+public class GameFlowManager
 {
+    private static GameFlowManager instance = null;
+
     public enum GameState { Day1, Day2, Day3 }
 
-    [Header("Controllers")]
-    public IngameDialogueController storyController;
-    public DialogueController messageController; // ¾È ¾²Áö¸¸ ÂüÁ¶¸¸ ³²°ÜµÒ
+    private IngameDialogueController storyController = null;
+    private DialogueController messageController = null;
+    private List<DialogueEvent> dialogueEvents = null;
+    private GameState currentState = GameState.Day1;
 
-    [Header("Events")]
-    public List<DialogueEvent> dialogueEvents;
-
-    private GameState currentState;
-
-    public static GameFlowManager Instance { get; private set; }
-    public GameState _CurrentState => currentState;
-
-
-    private void Awake()
+    public static GameFlowManager Instance
     {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
+        get
+        {
+            if (instance == null)
+            {
+                instance = new GameFlowManager();
+            }
+            return instance;
+        }
     }
-    private void Start()
+
+    public GameState CurrentState => currentState;
+    public DialogueController MessageController => messageController;
+
+    private GameFlowManager() { }
+
+    /// <summary>
+    /// ë§¤ë‹ˆì € ì´ˆê¸°í™” í•¨ìˆ˜ì…ë‹ˆë‹¤. ì™¸ë¶€(AppEntryPoint ë“±)ì—ì„œ í˜¸ì¶œë©ë‹ˆë‹¤.
+    /// </summary>
+    public void Initialize(IngameDialogueController story, DialogueController message, List<DialogueEvent> events)
     {
-        Debug.Log("[GameFlowManager] °ÔÀÓ ½ÃÀÛµÊ - Start() È£Ãâ");
-        SetState(GameState.Day1);
+        this.storyController = story;
+        this.messageController = message;
+        this.dialogueEvents = events;
+
+        Debug.Log("[GameFlowManager] ì´ˆê¸°í™” ì™„ë£Œ");
+        
+        // í˜„ì¬ ì €ì¥ëœ ë‚ ì§œì— ë”°ë¼ ìƒíƒœ ì„¤ì •
+        SetStateByDay(DayProgressManager.Instance.CurrentDay);
+    }
+
+    private void SetStateByDay(int day)
+    {
+        switch (day)
+        {
+            case 1: SetState(GameState.Day1); break;
+            case 2: SetState(GameState.Day2); break;
+            case 3: SetState(GameState.Day3); break;
+            default: SetState(GameState.Day1); break;
+        }
     }
 
     public void SetState(GameState newState)
     {
         currentState = newState;
-        Debug.Log($"[GameFlowManager] »óÅÂ ÀüÈ¯µÊ ¡æ {newState}");
+        Debug.Log($"[GameFlowManager] ìƒíƒœ ë³€ê²½: {newState}");
 
         switch (newState)
         {
             case GameState.Day1:
-                StartStory("ch01");
+                StartStory("ch01_intro"); // ë” ëª…í™•í•œ ì‹œë‚˜ë¦¬ì˜¤ ì´ë¦„ ì‚¬ìš©
                 break;
             case GameState.Day2:
-                StartStory("ch02");
+                StartStory("ch02_main");
                 break;
             case GameState.Day3:
-                StartStory("ch03");
+                StartStory("ch03_climax");
                 break;
         }
     }
@@ -53,48 +83,45 @@ public class GameFlowManager : MonoBehaviour
         var story = GetDialogueEvent(chapterKeyword);
         if (story != null && storyController != null)
         {
-            Debug.Log($"[GameFlowManager] ½ºÅä¸® ½ÃÀÛ: {chapterKeyword}");
+            Debug.Log($"[GameFlowManager] ìŠ¤í† ë¦¬ ì‹œì‘: {chapterKeyword}");
             storyController.StartDialogue(story);
         }
         else
         {
-            Debug.LogError($"[GameFlowManager] ½ºÅä¸® µ¥ÀÌÅÍ ¶Ç´Â ÄÁÆ®·Ñ·¯ ¾øÀ½: {chapterKeyword}");
+            // Dialogue System for Unity ëª¨ë“œì—ì„œëŠ” ì—ì…‹ ë°ì´í„°ë² ì´ìŠ¤ì— 
+            // chapterKeywordì™€ ì¼ì¹˜í•˜ëŠ” Conversationì´ ìˆëŠ”ì§€ í™•ì¸í•´ì•¼ í•¨
+            Debug.LogWarning($"[GameFlowManager] ìŠ¤í† ë¦¬ '{chapterKeyword}'ë¥¼ ì°¾ì„ ìˆ˜ ì—†ê±°ë‚˜ ë°ì´í„°ë² ì´ìŠ¤ í™•ì¸ì´ í•„ìš”í•©ë‹ˆë‹¤.");
         }
     }
 
     private DialogueEvent GetDialogueEvent(string partialName)
     {
+        if (dialogueEvents == null) return null;
+
         foreach (var evt in dialogueEvents)
         {
-            Debug.Log("[GameFlowManager] ÀÌº¥Æ® °Ë»ö Áß: " + (evt != null ? evt.name : "null"));
             if (evt != null && evt.name.ToLower().Contains(partialName.ToLower()))
                 return evt;
         }
-        Debug.LogError("[GameFlowManager] ÀÌº¥Æ®¸¦ Ã£À» ¼ö ¾øÀ½: " + partialName);
         return null;
     }
 
     public void OnAppMessageTag()
     {
-        // ¸Ş½ÃÁö ½ÃÀÛ ÅÂ±× (app:message_start) ¡æ ½ÇÇà Áß´Ü
-        Debug.Log("[GameFlowManager] ¸Ş½ÃÁö ½ÃÀÛ ÅÂ±× °¨ÁöµÊ ¡æ ½ºÅä¸® Á¤Áö (´ë»ç Èå¸§Àº À¯Áö)");
-        // ¾Æ¹« µ¿ÀÛ ¾øÀ½
+        Debug.Log("[GameFlowManager] ì•± ë©”ì‹œì§€ íƒœê·¸ ê°ì§€");
+        // ì˜ˆ: í”¼ì‹± ë©”ì‹œì§€ ì•Œë¦¼ ë°œìƒ ì‹œ ë³´ì•ˆ ì ìˆ˜ í•˜ë½
+        SecurityAppManager.Instance.NotifyPhishingAttack(10f);
     }
 
     public void OnMessageDialogueEnd()
     {
-        Debug.Log("[GameFlowManager] ¸Ş½ÃÁö Á¾·á ¡æ ½ºÅä¸® º¹±Í");
-
-        // ±âÁ¸ ÀÎ°ÔÀÓ Èå¸§ Àç½ÃÀÛ
-        var story = GetDialogueEvent("ch01"); // È¤Àº º¹±ÍÇÒ Ã©ÅÍ
-        if (story != null && storyController != null)
+        Debug.Log("[GameFlowManager] ë©”ì‹œì§€ ëŒ€í™” ì¢…ë£Œ");
+        
+        // íŠ¹ì • ëŒ€í™” ì¢…ë£Œ í›„ ë‹¤ìŒ ë‚ ë¡œ ì§„í–‰í•˜ëŠ” ë¡œì§ ì˜ˆì‹œ
+        if (DayProgressManager.Instance.CurrentDay == 1)
         {
-            storyController.StartDialogue(story);
-        }
-        else
-        {
-            Debug.LogError("[GameFlowManager] ½ºÅä¸® º¹±Í ½ÇÆĞ: ÀÌº¥Æ® ¶Ç´Â ÄÁÆ®·Ñ·¯ ¾øÀ½");
+            DayProgressManager.Instance.AdvanceDay();
+            SetStateByDay(DayProgressManager.Instance.CurrentDay);
         }
     }
-
 }

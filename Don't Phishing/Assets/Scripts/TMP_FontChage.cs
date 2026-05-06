@@ -9,7 +9,9 @@ using UnityEditor;
 
 public class TMP_FontChanger : MonoBehaviour
 {
-    [SerializeField] public TMP_FontAsset FontAsset;
+    [SerializeField] private TMP_FontAsset fontAsset = null;
+
+    public TMP_FontAsset GetFontAsset() => fontAsset;
 }
 
 #if UNITY_EDITOR
@@ -22,7 +24,14 @@ public class TMP_FontChangerEditor : Editor
 
         if (GUILayout.Button("Change Font!"))
         {   
-            TMP_FontAsset fontAsset = ((TMP_FontChanger)target).FontAsset;
+            TMP_FontChanger changer = (TMP_FontChanger)target;
+            TMP_FontAsset fontAsset = changer.GetFontAsset();
+
+            if (fontAsset == null)
+            {
+                Debug.LogWarning("[TMP_FontChanger] FontAsset이 설정되지 않았습니다.");
+                return;
+            }
 
             foreach (TextMeshPro textMeshPro3D in GameObject.FindObjectsOfType<TextMeshPro>(true))
             {

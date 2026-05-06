@@ -6,49 +6,60 @@ using TMPro;
 using UnityEngine.UI;
 
 /// <summary>
-/// ÀÎ°ÔÀÓ ´ë»ç UI¸¦ °ü¸®ÇÏ´Â Å¬·¡½º
-/// ´ë»ç Ãâ·Â, Å¸ÀÚ ¾Ö´Ï¸ŞÀÌ¼Ç, ¼±ÅÃÁö ¹öÆ° Ç¥½Ã/¼û±è Ã³¸®
+/// ì¸ê²Œì„ ëŒ€í™” UIë¥¼ ì œì–´í•˜ëŠ” í´ë˜ìŠ¤ì…ë‹ˆë‹¤.
+/// ëŒ€í™”ì°½, íƒ€ì´í•‘ ì• ë‹ˆë©”ì´ì…˜, ì„ íƒì§€ ë²„íŠ¼ í‘œì‹œ/ìˆ¨ê¹€ì„ ë‹´ë‹¹í•©ë‹ˆë‹¤.
 /// </summary>
 public class IngameDialogueUIManager : MonoBehaviour
 {
-    [Header("UI ÄÄÆ÷³ÍÆ®")]
-    [SerializeField] private TMP_Text messageText;           // ´ë»ç Ãâ·Â ÅØ½ºÆ®
-    [SerializeField] private GameObject dialogueBox;         // ´ë»ç ¹Ú½º ÀüÃ¼
-    [SerializeField] private Button[] choiceButtons;         // ¼±ÅÃÁö ¹öÆ°µé
+    [Header("UI ì»´í¬ë„ŒíŠ¸")]
+    [SerializeField] private TMP_Text messageText = null;           // ëŒ€í™” ë‚´ìš© í…ìŠ¤íŠ¸
+    [SerializeField] private GameObject dialogueBox = null;         // ëŒ€í™” ë°•ìŠ¤ ì „ì²´
+    [SerializeField] private Button[] choiceButtons = new Button[0]; // ì„ íƒì§€ ë²„íŠ¼ë“¤
 
-    private bool isTyping = false; // ÇöÀç Å¸ÀÚ ¾Ö´Ï¸ŞÀÌ¼Ç Áß ¿©ºÎ
+    private bool isTyping = false; // í˜„ì¬ íƒ€ì´í•‘ ì• ë‹ˆë©”ì´ì…˜ ì¤‘ì¸ì§€ ì—¬ë¶€
+
+    private void Awake()
+    {
+        Init();
+    }
+
+    private void Init()
+    {
+        if (messageText == null) Debug.LogError("[IngameDialogueUIManager] messageTextê°€ í• ë‹¹ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
+        if (dialogueBox == null) Debug.LogError("[IngameDialogueUIManager] dialogueBoxê°€ í• ë‹¹ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
+        
+        HideDialogueBox();
+        HideChoices();
+    }
 
     /// <summary>
-    /// ÀÏ¹İ ¸Ş½ÃÁö Ãâ·Â (ÇÃ·¹ÀÌ¾î)
+    /// ì¼ë°˜ ë©”ì‹œì§€ ì¶œë ¥
     /// </summary>
     public void ShowMessage(string text, Action onComplete)
     {
-        Debug.Log($"[ShowMessage] Ãâ·ÂÇÒ ÅØ½ºÆ®: {text}");
+        if (messageText == null) return;
 
         messageText.color = Color.black;
         dialogueBox.SetActive(true);
-
-        // °­Á¦·Î ÅØ½ºÆ® ¼¼ÆÃÇØº¸±â
-        messageText.text = "[TEST] " + text;
 
         StartCoroutine(TypeLine(text, onComplete));
     }
 
 
     /// <summary>
-    /// ½Ã½ºÅÛ ¸Ş½ÃÁö Ãâ·Â
+    /// ì‹œìŠ¤í…œ ë©”ì‹œì§€ ì¶œë ¥
     /// </summary>
     public void ShowSystemMessage(string text, Action onComplete)
     {
-        /*messageText.color = new Color(1f, 0.85f, 0.2f);*/
-        messageText.color = Color.black;
+        if (messageText == null) return;
 
+        messageText.color = Color.black;
         dialogueBox.SetActive(true);
         StartCoroutine(TypeLine(text, onComplete));
     }
 
     /// <summary>
-    /// ÅØ½ºÆ®¸¦ ÇÑ ±ÛÀÚ¾¿ Ãâ·ÂÇÏ´Â ÄÚ·çÆ¾
+    /// í…ìŠ¤íŠ¸ë¥¼ í•œ ê¸€ìì”© ì¶œë ¥í•˜ëŠ” ì½”ë£¨í‹´
     /// </summary>
     private IEnumerator TypeLine(string text, Action onComplete)
     {
@@ -58,7 +69,7 @@ public class IngameDialogueUIManager : MonoBehaviour
         foreach (char c in text)
         {
             messageText.text += c;
-            yield return new WaitForSeconds(0.03f); // Å¸ÀÚ ¼Óµµ Á¶Àı
+            yield return new WaitForSeconds(0.03f); // íƒ€ì´í•‘ ì†ë„ ì¡°ì ˆ
         }
 
         isTyping = false;
@@ -66,12 +77,12 @@ public class IngameDialogueUIManager : MonoBehaviour
     }
 
     /// <summary>
-    /// ÇöÀç ¸Ş½ÃÁö Ãâ·Â ÁßÀÎÁö È®ÀÎ
+    /// í˜„ì¬ íƒ€ì´í•‘ ì¤‘ì¸ì§€ í™•ì¸
     /// </summary>
     public bool IsTyping() => isTyping;
 
     /// <summary>
-    /// ¼±ÅÃÁö¸¦ È­¸é¿¡ Ç¥½ÃÇÏ°í, ¹öÆ° Å¬¸¯ ½Ã Äİ¹é ½ÇÇà
+    /// ì„ íƒì§€ë¥¼ í™”ë©´ì— í‘œì‹œí•˜ê³ , ë²„íŠ¼ í´ë¦­ ì‹œ ì½œë°± ì‹¤í–‰
     /// </summary>
     public void ShowChoices(List<(string, int)> choices, Action<int> onChoice)
     {
@@ -80,7 +91,9 @@ public class IngameDialogueUIManager : MonoBehaviour
             if (i < choices.Count)
             {
                 var (text, id) = choices[i];
-                choiceButtons[i].GetComponentInChildren<TMP_Text>().text = text;
+                TMP_Text btnText = choiceButtons[i].GetComponentInChildren<TMP_Text>();
+                if (btnText != null) btnText.text = text;
+
                 choiceButtons[i].gameObject.SetActive(true);
                 choiceButtons[i].onClick.RemoveAllListeners();
                 choiceButtons[i].onClick.AddListener(() => onChoice(id));
@@ -93,20 +106,23 @@ public class IngameDialogueUIManager : MonoBehaviour
     }
 
     /// <summary>
-    /// ¸ğµç ¼±ÅÃÁö ¹öÆ°À» ¼û±é´Ï´Ù
+    /// ì„ íƒì§€ ë²„íŠ¼ ìˆ¨ê¸°ê¸°
     /// </summary>
     public void HideChoices()
     {
+        if (choiceButtons == null) return;
+
         foreach (var b in choiceButtons)
         {
-            b.gameObject.SetActive(false);
+            if (b != null) b.gameObject.SetActive(false);
         }
     }
 
-    // uiManager ÂÊ¿¡µµ ¾Æ·¡ ¸Ş¼­µå°¡ ÇÊ¿ä
+    /// <summary>
+    /// ëŒ€í™” ë°•ìŠ¤ ìˆ¨ê¸°ê¸°
+    /// </summary>
     public void HideDialogueBox()
     {
-        dialogueBox.SetActive(false);
+        if (dialogueBox != null) dialogueBox.SetActive(false);
     }
-
 }

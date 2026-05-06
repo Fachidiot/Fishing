@@ -1,94 +1,52 @@
-using System;
+using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-[Serializable]
-public class LText
+/// <summary>
+/// 핸드폰 내 앱 아이콘 및 실행을 담당하는 컴포넌트입니다.
+/// </summary>
+public class App : MonoBehaviour
 {
-    public string[] m_Text;
+    [SerializeField] private string m_AppName = "";
+    [SerializeField] private TMP_Text m_TMPName = null;
 
-    public string GetText(Language language)
+    private void Awake()
     {
-        return m_Text[(int)language];
-    }
-}
+        if (m_TMPName == null) m_TMPName = GetComponentInChildren<TMP_Text>();
+        
+        // 언어 변경 이벤트 구독
+        if (OSManager.Instance != null)
+        {
+            OSManager.Instance.OnLanguageChanged += UpdateLanguage;
+        }
 
-public class App : Observer
-{
-    [SerializeField]
-    private Image m_Image;
-    [SerializeField]
-    private Sprite m_Source;
-    [SerializeField]
-    private Button m_Button;
-    [SerializeField]
-    private GameObject m_Target;
-    [Header("Title")]
-    [SerializeField]
-    private bool m_Title;
-    [SerializeField]
-    private LText m_Text;
-    [SerializeField]
-    private TMP_Text m_TitleText;
-    [Header("Stack")]
-    [SerializeField]
-    private GameObject m_Stack;
-    [SerializeField]
-    private TMP_Text m_StackText;
-
-    private int m_Count = 0;
-
-    private void Start()
-    {
-        OSManager.Instance.Attach(this);
-
-        m_Button.onClick.AddListener(RunApp);
-
-        m_Image.sprite = m_Source;
-        UpdateText();
-        UpdateStack();
+        UpdateLanguage();
     }
 
-    public void OnStack(int count)
+    private void OnDestroy()
     {
-        m_Stack.SetActive(true);
-        m_Count = count;
-        m_StackText.text = count.ToString();
+        // 이벤트 구독 해제 (메모리 누수 방지)
+        if (OSManager.Instance != null)
+        {
+            OSManager.Instance.OnLanguageChanged -= UpdateLanguage;
+        }
     }
 
-    private void UpdateText()
+    public void RunApp()
     {
-        if (m_Title)
-            m_TitleText.text = m_Text.GetText(OSManager.Instance.GetLanguage());
-        else
-            m_TitleText.text = "";
+        if (AppManager.Instance != null)
+        {
+            AppManager.Instance.RunApp(m_AppName);
+        }
     }
 
-    private void UpdateStack()
+    private void UpdateLanguage()
     {
-        if (m_Stack == null)
-            return;
-        if (m_Count != 0)
-            OnStack(m_Count);
-        else
-            EraseStack();
-    }
-
-    private void RunApp()
-    {
-        AppManager.Instance.ResetApps();
-        AppManager.Instance.RunApp(gameObject.name);
-    }
-
-    public void EraseStack()
-    {
-        m_Stack.SetActive(false);
-        m_StackText.text = 1.ToString();
-    }
-
-    public override void Notify(Subject subject)
-    {
-        UpdateText();
+        if (m_TMPName == null) return;
+        
+        // OSManager의 현재 언어에 따라 이름 업데이트 (필요 시 로직 확장 가능)
+        m_TMPName.text = m_AppName; 
     }
 }

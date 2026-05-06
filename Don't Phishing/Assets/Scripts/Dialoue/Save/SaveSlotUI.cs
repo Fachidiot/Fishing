@@ -2,29 +2,41 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 
-// ¼¼ÀÌºê ½½·Ô UI ÇÏ³ª¸¦ Á¦¾îÇÏ´Â ½ºÅ©¸³Æ®
-// ÀúÀåµÈ µ¥ÀÌÅÍ Ç¥½Ã ¹× Å¬¸¯ ÀÌº¥Æ® Ã³¸®
+// ì„¸ì´ë¸Œ ìŠ¬ë¡¯ UI í•˜ë‚˜ë¥¼ ì œì–´í•˜ëŠ” ìŠ¤í¬ë¦½íŠ¸
+// ì €ì¥ëœ ë°ì´í„° í‘œì‹œ ë° í´ë¦­ ì´ë²¤íŠ¸ ì²˜ë¦¬
 
 public class SaveSlotUI : MonoBehaviour
 {
-    [Header("UI ±¸¼º ¿ä¼Ò")]
-    [SerializeField] private TMP_Text slotTitleText;    // ÀÌº¥Æ® ÀÌ¸§
-    [SerializeField] private TMP_Text timeText;         // ÀúÀå ½Ã°¢
-    [SerializeField] private Button slotButton;         // Å¬¸¯ ¹öÆ°
+    [Header("UI ì»´í¬ë„ŒíŠ¸")]
+    [SerializeField] private TMP_Text slotTitleText = null;    // ì´ë²¤íŠ¸ ì´ë¦„
+    [SerializeField] private TMP_Text timeText = null;         // ì €ì¥ ì‹œê°„
+    [SerializeField] private Button slotButton = null;         // í´ë¦­ ë²„íŠ¼
 
-    private int slotIndex;  // ÀÌ ½½·ÔÀÇ °íÀ¯ ¹øÈ£
+    private int slotIndex = 0;  // ìŠ¬ë¡¯ ì¸ë±ìŠ¤ ë²ˆí˜¸
 
     public enum SlotMode { Save, Load }
-    private SlotMode mode;
+    private SlotMode mode = SlotMode.Save;
 
+    private void Awake()
+    {
+        Init();
+    }
 
-    // ½½·Ô ÃÊ±âÈ­ ÇÔ¼ö
+    private void Init()
+    {
+        if (slotTitleText == null) Debug.LogError("[SaveSlotUI] slotTitleTextê°€ í• ë‹¹ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
+        if (timeText == null) Debug.LogError("[SaveSlotUI] timeTextê°€ í• ë‹¹ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
+        if (slotButton == null) Debug.LogError("[SaveSlotUI] slotButtonì´ í• ë‹¹ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
+    }
+
+    // ìŠ¬ë¡¯ ì´ˆê¸°í™” í•¨ìˆ˜
     public void Initialize(int index, SlotMode mode, System.Action<int> onClickAction)
     {
         this.slotIndex = index;
         this.mode = mode;
 
-        DialogueSaveData data = SMSManager.Instance.LoadDialogueSlot(index);
+        // ë¹„-Mono ë§¤ë‹ˆì €ë¥¼ í†µí•´ ë°ì´í„° ë¡œë“œ
+        DialogueSaveData data = SaveLoadManager.Instance.LoadDialogue(index);
 
         if (data != null)
         {
@@ -33,11 +45,14 @@ public class SaveSlotUI : MonoBehaviour
         }
         else
         {
-            slotTitleText.text = "ºó ½½·Ô";
+            slotTitleText.text = "ë¹ˆ ìŠ¬ë¡¯";
             timeText.text = "";
         }
 
-        slotButton.onClick.RemoveAllListeners();
-        slotButton.onClick.AddListener(() => onClickAction?.Invoke(slotIndex));
+        if (slotButton != null)
+        {
+            slotButton.onClick.RemoveAllListeners();
+            slotButton.onClick.AddListener(() => onClickAction?.Invoke(slotIndex));
+        }
     }
 }

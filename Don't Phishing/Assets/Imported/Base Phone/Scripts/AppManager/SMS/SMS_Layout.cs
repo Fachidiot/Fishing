@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// SMS ¸Ş½ÃÁö ÇÁ¸®ºä ½½·Ô ±¸¼º ¹× Å¬¸¯ ½Ã ´ëÈ­ ½ÇÇà
+/// SMS ë©”ì‹œì§€ ë ˆì´ì•„ì›ƒ ë° í´ë¦­ ì´ë²¤íŠ¸ë¥¼ ì²˜ë¦¬í•˜ëŠ” ì»´í¬ë„ŒíŠ¸ì…ë‹ˆë‹¤.
 /// </summary>
 public class SMS_Layout : MonoBehaviour
 {
@@ -16,24 +16,31 @@ public class SMS_Layout : MonoBehaviour
     [SerializeField] private TMP_Text m_TMPDate;
     [SerializeField] private DialogueEvent m_DialogueEvent;
 
-    [SerializeField] private List<Message> m_Message;
+    private List<Message> m_Message = new List<Message>();
     private int m_Index = -1;
 
     private void Awake()
     {
-        m_Message = new List<Message>();
+        if (m_Button == null) return;
 
-        // Å¬¸¯ ½Ã ¸Ş½ÃÁö ·Îµå
-        m_Button.onClick.AddListener(() => SMSManager.Instance.LoadMessage(m_Message));
+        // ë©”ì‹œì§€ ë¦¬ìŠ¤íŠ¸ ë¡œë“œ ì´ë²¤íŠ¸ ë“±ë¡
+        m_Button.onClick.AddListener(() => {
+            if (SMSManager.Instance != null)
+                SMSManager.Instance.LoadMessage(m_Message);
+        });
 
-        // Å¬¸¯ ½Ã ´ëÈ­ ½ÇÇà
+        // ëŒ€í™” ì‹œì‘ ì´ë²¤íŠ¸ ë“±ë¡
         m_Button.onClick.AddListener(() =>
         {
-            DialogueController controller = FindObjectOfType<DialogueController>();
+            DialogueController controller = GameFlowManager.Instance.MessageController;
             if (controller != null && m_DialogueEvent != null)
+            {
                 controller.StartDialogue(m_DialogueEvent);
+            }
             else
-                Debug.LogWarning("[SMS_Layout] DialogueController ¶Ç´Â DialogueEvent°¡ ºñ¾î ÀÖ½À´Ï´Ù.");
+            {
+                Debug.LogWarning("[SMS_Layout] DialogueController ë˜ëŠ” DialogueEventê°€ ìœ íš¨í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.");
+            }
         });
     }
 
@@ -42,13 +49,13 @@ public class SMS_Layout : MonoBehaviour
         m_Message.Add(message);
         m_Index++;
 
-        m_TMPName.text = m_Message[m_Index].name;
-        m_TMPMessage.text = message.message.Contains("/") ? "Image" : m_Message[m_Index].message;
-        m_TMPDate.text = m_Message[m_Index].date;
+        if (m_TMPName != null) m_TMPName.text = message.name;
+        if (m_TMPMessage != null) m_TMPMessage.text = message.message.Contains("/") ? "Image" : message.message;
+        if (m_TMPDate != null) m_TMPDate.text = message.date;
     }
 
     public Message GetMessage()
     {
-        return m_Message[m_Index];
+        return (m_Index >= 0 && m_Index < m_Message.Count) ? m_Message[m_Index] : null;
     }
 }

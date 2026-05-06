@@ -1,64 +1,79 @@
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class TaskManager : MonoBehaviour
+/// <summary>
+/// 실행 중인 앱들의 기록을 관리하는 순수 C# 매니저 클래스입니다.
+/// </summary>
+public class TaskManager
 {
-    [SerializeField]
-    private GameObject m_TaskBar;
-    [SerializeField]
-    private Transform m_TaskParent;
-    [SerializeField]
-    private GameObject m_TaskLayout;
+    private static TaskManager instance = null;
 
-    private List<string> m_Tasks;
+    private TaskProvider provider = null;
+    private List<string> tasks = new List<string>();
 
-    private void Awake()
+    public static TaskManager Instance
     {
-        m_Tasks = new List<string>();
+        get
+        {
+            if (instance == null) instance = new TaskManager();
+            return instance;
+        }
     }
 
-    private void Update()
-    {
-        if (m_Tasks.Count == 0)
-            m_TaskBar.SetActive(false);
-    }
+    private TaskManager() { }
 
-    public void RunningApp()
+    public void Initialize(TaskProvider provider)
     {
-        m_TaskBar.SetActive(false);
+        this.provider = provider;
+        tasks.Clear();
+        UpdateTaskBarVisibility();
     }
 
     public void AddTask(string name)
     {
-        if (!CheckValidate(name))
-            return;
-        m_Tasks.Add(name);
+        if (string.IsNullOrEmpty(name)) return;
+        if (!CheckValidate(name)) return;
 
-        InstantiateTask(name);
+        tasks.Add(name);
+        InstantiateTaskUI(name);
+        UpdateTaskBarVisibility();
     }
 
     private bool CheckValidate(string name)
     {
-        if (m_Tasks.Count <= 0)
-            return true;
-        foreach (var task in m_Tasks)
-        {
-            if (task == name)
-                return false;
-        }
-        return true;
+        return !tasks.Contains(name);
     }
 
     public void Remove(string name)
     {
-        m_Tasks.Remove(name);
+        tasks.Remove(name);
+        UpdateTaskBarVisibility();
     }
 
-    private void InstantiateTask(string name)
+    private void InstantiateTaskUI(string name)
     {
-        GameObject go = Instantiate(m_TaskLayout, m_TaskParent);
-        go.GetComponent<Task_Layout>().SetTaskLayout(name, this, m_TaskBar.GetComponent<ScrollRect>());
+        if (provider == null || provider.TaskLayoutPrefab == null || provider.TaskParent == null) return;
+
+        GameObject go = GameObject.Instantiate(provider.TaskLayoutPrefab, provider.TaskParent);
+        var layout = go.GetComponent<Task_Layout>();
+        if (layout != null)
+        {
+            var scrollRect = provider.TaskBar?.GetComponent<ScrollRect>();
+            layout.SetTaskLayout(name, null, scrollRect); 
+        }
+    }
+
+    private void UpdateTaskBarVisibility()
+    {
+        if (provider != null && provider.TaskBar != null)
+            provider.TaskBar.SetActive(tasks.Count > 0);
+    }
+
+    public void RunningApp()
+    {
+        if (provider != null && provider.TaskBar != null)
+            provider.TaskBar.SetActive(false);
     }
 }

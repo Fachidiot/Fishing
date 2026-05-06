@@ -1,91 +1,97 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 
-public class AppManager : Observer
+/// <summary>
+/// 핸드폰 앱들의 실행과 관리를 담당하는 순수 C# 매니저 클래스입니다.
+/// </summary>
+public class AppManager : IDisposable
 {
-    private static AppManager m_Instance;
-    public static AppManager Instance { get { return m_Instance; } }
+    private static AppManager instance = null;
 
-    [SerializeField]
-    private GameObject[] m_Apps;
-    [SerializeField]
-    private GameObject m_background;
+    private AppProvider provider = null;
+    private bool isDisposed = false;
 
-    private void Awake()
+    public static AppManager Instance
     {
-        if (m_Instance != null)
+        get
         {
-            Destroy(this);
-            return;
+            if (instance == null) instance = new AppManager();
+            return instance;
         }
-        m_Instance = this;
     }
 
-    private void Start()
+    private AppManager() { }
+
+    public void Initialize(AppProvider provider)
     {
-        OSManager.Instance.Attach(this);
+        this.provider = provider;
         ResetApps();
-
+        
+        // 초기화 시 컨테이너 비활성화
+        if (provider != null && provider.AppScreenContainer != null)
+            provider.AppScreenContainer.SetActive(false);
+            
+        Debug.Log("[AppManager] 초기화 완료");
     }
 
-    private void SetText()
+    public void Dispose()
     {
-        foreach (var view in m_Apps)
-        {
-            var tmp = view.GetComponent<BaseAppManager>();
-            if (tmp)
-                view.GetComponent<BaseAppManager>().SetText();
-        }
+        if (isDisposed) return;
+        isDisposed = true;
     }
 
     public string GetCurrentApp()
     {
-        foreach (var app in m_Apps)
+        if (provider == null || provider.Apps == null) return string.Empty;
+        foreach (var app in provider.Apps)
         {
-            if (app.activeSelf)
-                return app.GetComponent<BaseAppManager>().GetName();
+            if (app != null && app.activeSelf)
+                return app.GetComponent<BaseAppManager>()?.GetName() ?? string.Empty;
         }
         return string.Empty;
     }
 
     public void RunApp(string name)
     {
+        if (provider == null) return;
+        
         OSManager.Instance.RunApp();
-        foreach (var app in m_Apps)
+        
+        if (provider.AppScreenContainer != null)
+            provider.AppScreenContainer.SetActive(true);
+
+        foreach (var app in provider.Apps)
         {
-            if (app.name == name + " Screen")
+            if (app != null && app.name == name + " Screen")
             {
                 app.SetActive(true);
                 break;
             }
         }
-        m_background.SetActive(true);
     }
 
     public void ResetApps()
     {
-        foreach (var app in m_Apps)
-        {
-            app.gameObject.SetActive(false);
-        }
-        m_background.SetActive(false);
-    }
+        if (provider == null) return;
 
-    public override void Notify(Subject subject)
-    {
-        SetText();
+        if (provider.AppScreenContainer != null)
+            provider.AppScreenContainer.SetActive(false);
+
+        foreach (var app in provider.Apps)
+        {
+            if (app != null) app.SetActive(false);
+        }
     }
 
     public void RefreshApp(string name)
     {
-        foreach (var app in m_Apps)
+        if (provider == null || provider.Apps == null) return;
+        foreach (var app in provider.Apps)
         {
-            if (app.name == name)
+            if (app != null && app.name == name)
             {
-                app.GetComponent<BaseAppManager>().ResetApp();
+                app.GetComponent<BaseAppManager>()?.ResetApp();
                 return;
             }
         }

@@ -4,27 +4,45 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// ´ë»ç Ãâ·Â, ¼±ÅÃÁö Ç¥½Ã µî UI Ã³¸® ´ã´ç ¸Å´ÏÀú
+/// ëŒ€í™” ë©”ì‹œì§€(í…ìŠ¤íŠ¸/ì´ë¯¸ì§€)ì™€ ì„ íƒì§€ ë²„íŠ¼ì„ ê´€ë¦¬í•˜ëŠ” UI ë§¤ë‹ˆì €ì…ë‹ˆë‹¤.
 /// </summary>
 public class DialogueUIManager : MonoBehaviour
 {
-    [Header("Message Prefabs")]
-    [SerializeField] private GameObject playerMessagePrefab;
-    [SerializeField] private GameObject npcMessagePrefab;
-    [SerializeField] private GameObject imageMessagePrefab;
-    [SerializeField] private Transform messageParent;
+    [Header("ë©”ì‹œì§€ í”„ë¦¬íŒ¹")]
+    [SerializeField] private GameObject playerMessagePrefab = null;
+    [SerializeField] private GameObject npcMessagePrefab = null;
+    [SerializeField] private GameObject imageMessagePrefab = null;
+    [SerializeField] private Transform messageParent = null;
 
-    [Header("Choice Buttons")]
-    [SerializeField] private Button[] choiceButtons;
+    [Header("ì„ íƒì§€ ë²„íŠ¼")]
+    [SerializeField] private Button[] choiceButtons = new Button[0];
 
-    private GameObject lastMessageObj;
+    private GameObject lastMessageObj = null;
+    private DialogueProvider dialogueProvider = null;
+
+    private void Awake()
+    {
+        Init();
+    }
+
+    private void Init()
+    {
+        if (playerMessagePrefab == null) Debug.LogError("[DialogueUIManager] playerMessagePrefabì´ í• ë‹¹ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
+        if (npcMessagePrefab == null) Debug.LogError("[DialogueUIManager] npcMessagePrefabì´ í• ë‹¹ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
+        if (messageParent == null) Debug.LogError("[DialogueUIManager] messageParentê°€ í• ë‹¹ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
+
+        // ì»¨íŠ¸ë¡¤ëŸ¬ ì°¸ì¡° ìºì‹±
+        dialogueProvider = FindObjectOfType<DialogueProvider>();
+        
+        ClearChoices();
+    }
 
     /// <summary>
-    /// ¸Ş½ÃÁö Ãâ·Â (ÅØ½ºÆ® or ÀÌ¹ÌÁö)
+    /// ë©”ì‹œì§€ í‘œì‹œ (í…ìŠ¤íŠ¸ í˜¹ì€ ì´ë¯¸ì§€)
     /// </summary>
     public void ShowMessage(string message, bool isPlayer)
     {
-        GameObject prefab;
+        GameObject prefab = null;
 
         if (isPlayer)
         {
@@ -32,20 +50,24 @@ public class DialogueUIManager : MonoBehaviour
         }
         else
         {
-            // ÀÌ¹ÌÁö ¸Ş½ÃÁöÀÎÁö ÆÇ´Ü
+            // ì´ë¯¸ì§€ ë©”ì‹œì§€ ì—¬ë¶€ íŒë‹¨ (Resources ë¡œë“œ ì‹œë„)
             var sprite = Resources.Load<Sprite>(message);
             prefab = (sprite != null) ? imageMessagePrefab : npcMessagePrefab;
         }
 
-        var go = Instantiate(prefab, messageParent);
-        lastMessageObj = go;
+        if (prefab != null && messageParent != null)
+        {
+            var go = Instantiate(prefab, messageParent);
+            lastMessageObj = go;
 
-        var layout = go.GetComponent<Message_Layout>();
-        layout?.SetUp(message);
+            // Message_Layout ì»´í¬ë„ŒíŠ¸ê°€ ìˆë‹¤ë©´ ë°ì´í„° ì„¤ì •
+            var layout = go.GetComponent<Message_Layout>();
+            layout?.SetUp(message);
+        }
     }
 
     /// <summary>
-    /// ¸¶Áö¸· Ãâ·ÂµÈ ¸Ş½ÃÁö¸¦ ¾÷µ¥ÀÌÆ® (Å¸ÀÚ È¿°ú¿ë)
+    /// ì¶œë ¥ ì¤‘ì¸ ë§ˆì§€ë§‰ ë©”ì‹œì§€ ì—…ë°ì´íŠ¸ (íƒ€ì´í•‘ íš¨ê³¼ìš©)
     /// </summary>
     public void UpdateLastMessage(string updatedText)
     {
@@ -56,11 +78,11 @@ public class DialogueUIManager : MonoBehaviour
     }
 
     /// <summary>
-    /// ¼±ÅÃÁö ¹öÆ° Ç¥½Ã
+    /// ì„ íƒì§€ ë²„íŠ¼ í‘œì‹œ
     /// </summary>
     public void ShowChoices(List<(string text, int nextId)> choices)
     {
-        ClearChoices(); // ±âÁ¸ ¹öÆ° ÃÊ±âÈ­
+        ClearChoices();
 
         int max = Mathf.Min(choices.Count, choiceButtons.Length);
 
@@ -70,31 +92,42 @@ public class DialogueUIManager : MonoBehaviour
             var button = choiceButtons[i];
             var tmp = button.GetComponentInChildren<TMP_Text>();
 
-            if (tmp != null)
-                tmp.text = text;
+            if (tmp != null) tmp.text = text;
 
             button.gameObject.SetActive(true);
             button.onClick.RemoveAllListeners();
 
             button.onClick.AddListener(() =>
             {
-                DialogueController controller = FindObjectOfType<DialogueController>();
-                ShowMessage(text, true); // ¼±ÅÃÇÑ ¸Ş½ÃÁö¸¦ ÇÃ·¹ÀÌ¾î ¸»Ç³¼±À¸·Î Ãâ·Â
-                ClearChoices();
-                controller.ProceedNext(nextId);
+                OnChoiceClicked(text, nextId);
             });
         }
     }
 
+    private void OnChoiceClicked(string text, int nextId)
+    {
+        if (dialogueProvider != null && dialogueProvider.Controller != null)
+        {
+            ShowMessage(text, true); // í”Œë ˆì´ì–´ì˜ ì„ íƒì„ ëŒ€í™”ì°½ì— í‘œì‹œ
+            ClearChoices();
+            dialogueProvider.Controller.ProceedNext(nextId);
+        }
+    }
+
     /// <summary>
-    /// ¼±ÅÃÁö ¹öÆ° ¼û±è
+    /// ëª¨ë“  ì„ íƒì§€ ë²„íŠ¼ ìˆ¨ê¹€ ë° ì´ë²¤íŠ¸ ì´ˆê¸°í™”
     /// </summary>
     public void ClearChoices()
     {
+        if (choiceButtons == null) return;
+
         foreach (var button in choiceButtons)
         {
-            button.onClick.RemoveAllListeners();
-            button.gameObject.SetActive(false);
+            if (button != null)
+            {
+                button.onClick.RemoveAllListeners();
+                button.gameObject.SetActive(false);
+            }
         }
     }
 }

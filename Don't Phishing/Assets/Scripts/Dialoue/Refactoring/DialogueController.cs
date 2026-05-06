@@ -1,63 +1,55 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 /// <summary>
-/// ´ëÈ­ Èå¸§À» Á¦¾îÇÏ´Â ÄÁÆ®·Ñ·¯ Å¬·¡½º
-/// DialogueEvent µ¥ÀÌÅÍ¸¦ ±â¹İÀ¸·Î ´ÙÀ½ ´ë»ç Ãâ·Â, ¼±ÅÃÁö Ã³¸®, ÅÂ±× Ã³¸® µîÀ» ´ã´ç
-/// UI Ãâ·Â ¹× ÅÂ±× ½ÇÇàÀº ¿ÜºÎ ¸Å´ÏÀú·Î ºĞ¸®µÊ
+/// ëŒ€í™” íë¦„ì„ ì œì–´í•˜ëŠ” ë¡œì§ í´ë˜ìŠ¤ì…ë‹ˆë‹¤.
+/// MonoBehaviourë¥¼ ìƒì†ë°›ì§€ ì•Šìœ¼ë©° UI ë° íƒœê·¸ í”„ë¡œì„¸ì„œì™€ ìƒí˜¸ì‘ìš©í•©ë‹ˆë‹¤.
 /// </summary>
-public class DialogueController : MonoBehaviour
+public class DialogueController
 {
-    [SerializeField] private DialogueUIManager uiManager;
-    [SerializeField] private DialogueTagProcessor tagProcessor;
+    private DialogueUIManager uiManager = null;
+    private DialogueTagProcessor tagProcessor = null;
+    private MonoBehaviour coroutineHost = null;
 
-    private DialogueEvent currentEvent;
-    private Dictionary<int, Dialogue> dialogueMap;
-    private int currentId;
+    private DialogueEvent currentEvent = null;
+    private Dictionary<int, Dialogue> dialogueMap = new Dictionary<int, Dialogue>();
+    private int currentId = 0;
+    private float delayAfterLine = 2f;
 
-    [SerializeField] private float delayAfterLine = 2f; // ¸Ş½ÃÁö Ãâ·Â ÈÄ °íÁ¤ µô·¹ÀÌ
-
-    private void Awake()
+    public void Initialize(DialogueUIManager ui, DialogueTagProcessor processor, MonoBehaviour host)
     {
-        if (uiManager == null)
-            uiManager = FindObjectOfType<DialogueUIManager>();
-        if (tagProcessor == null)
-            tagProcessor = new DialogueTagProcessor();
+        this.uiManager = ui;
+        this.tagProcessor = processor;
+        this.coroutineHost = host;
+        Debug.Log("[DialogueController] ë¡œì§ ì´ˆê¸°í™” ì™„ë£Œ");
     }
 
-    /// <summary>
-    /// ´ëÈ­ ½ÃÀÛ ÇÔ¼ö - DialogueEvent¸¦ ¹Ş¾Æ ´ëÈ­¸¦ ÃÊ±âÈ­ÇÏ°í Ã¹ ´ë»ç Ãâ·Â
-    /// </summary>
     public void StartDialogue(DialogueEvent dialogueEvent)
     {
+        if (dialogueEvent == null) return;
+
         currentEvent = dialogueEvent;
         BuildDialogueMap(dialogueEvent);
-        ProceedNext(dialogueEvent.lines[0].id); // ½ÃÀÛ ID´Â 0¹øÂ° ¶óÀÎ ±âÁØ
+        ProceedNext(dialogueEvent.lines[0].id);
     }
 
-    /// <summary>
-    /// ´ÙÀ½ ´ë»ç·Î ÁøÇàÇÏ´Â ÇÔ¼ö - ID ±â¹İÀ¸·Î ´ë»ç °Ë»ö ¹× Ãâ·Â ½ÃÀÛ
-    /// </summary>
     public void ProceedNext(int id)
     {
-        if (!dialogueMap.TryGetValue(id, out Dialogue line))
+        if (dialogueMap == null || !dialogueMap.TryGetValue(id, out Dialogue line))
         {
-            Debug.LogWarning($"Dialogue ID {id} not found.");
+            Debug.LogWarning($"Dialogue ID {id}ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
             return;
         }
 
         currentId = id;
-
-        bool isPlayer = line.speaker.ToLower().Contains("player") || line.speaker == "³ª";
-        uiManager.ShowMessage("", isPlayer); // ºó ¸Ş½ÃÁö ¸ÕÀú »ı¼º (Å¸ÀÚ È¿°ú Àü¿ë)
-
-        StartCoroutine(TypeLineRoutine(line, isPlayer));
+        bool isPlayer = line.speaker != null && (line.speaker.ToLower().Contains("player") || line.speaker == "ë‚˜");
+        
+        uiManager.ShowMessage("", isPlayer);
+        coroutineHost.StartCoroutine(TypeLineRoutine(line, isPlayer));
     }
 
-    /// <summary>
-    /// ´ë»ç Ãâ·Â ÄÚ·çÆ¾ - ÇÑ ±ÛÀÚ¾¿ Ãâ·Â ÈÄ ÅÂ±× Ã³¸® ¹× ´ÙÀ½ ºĞ±â °áÁ¤
-    /// </summary>
     private IEnumerator TypeLineRoutine(Dialogue line, bool isPlayer)
     {
         string typed = "";
@@ -68,69 +60,66 @@ public class DialogueController : MonoBehaviour
             yield return new WaitForSeconds(0.03f);
         }
 
-        // ÅÂ±× Ã³¸® ÈÄ 2ÃÊ ´ë±â
         bool tagComplete = false;
-        tagProcessor.Process(line.tag, () => tagComplete = true);
-        yield return new WaitUntil(() => tagComplete);
+        if (tagProcessor != null)
+        {
+            tagProcessor.Process(line.tag, () => tagComplete = true);
+            yield return new WaitUntil(() => tagComplete);
+        }
+        else
+        {
+            tagComplete = true;
+        }
 
         yield return new WaitForSeconds(delayAfterLine);
 
-        // ´ÙÀ½ ºĞ±â Ã³¸®
         if (!string.IsNullOrWhiteSpace(line.choices))
+        {
             uiManager.ShowChoices(ParseChoices(line.choices));
+        }
         else if (line.nextId != 0)
+        {
             ProceedNext(line.nextId);
+        }
         else
+        {
             EndDialogue();
+        }
     }
 
-    /// <summary>
-    /// ´ëÈ­ Á¾·á Ã³¸® ÇÔ¼ö - ¼±ÅÃÁö UI Á¦°Å µî
-    /// </summary>
     private void EndDialogue()
     {
         uiManager.ClearChoices();
-        Debug.Log("[DialogueController] Dialogue ended.");
+        Debug.Log("[DialogueController] ëŒ€í™” ì¢…ë£Œ");
     }
 
-    /// <summary>
-    /// DialogueEventÀÇ ¸ğµç ´ë»ç ID¸¦ µñ¼Å³Ê¸®·Î ¸ÅÇÎ
-    /// </summary>
     private void BuildDialogueMap(DialogueEvent dialogueEvent)
     {
-        dialogueMap = new Dictionary<int, Dialogue>();
+        dialogueMap.Clear();
         foreach (var line in dialogueEvent.lines)
         {
             if (!dialogueMap.ContainsKey(line.id))
                 dialogueMap[line.id] = line;
-            else
-                Debug.LogWarning($"Duplicate dialogue ID: {line.id}");
         }
     }
 
-    /// <summary>
-    /// ¼±ÅÃÁö ¹®ÀÚ¿­ ÆÄ½Ì ÇÔ¼ö (ex: "¿¹:2,¾Æ´Ï¿À:3")
-    /// </summary>
     private List<(string, int)> ParseChoices(string raw)
     {
         var choices = new List<(string, int)>();
-        var parts = raw.Split(',');
+        if (string.IsNullOrEmpty(raw)) return choices;
 
+        var parts = raw.Split(',');
         foreach (var part in parts)
         {
             var split = part.Split(':');
             if (split.Length == 2 && int.TryParse(split[1], out int nextId))
                 choices.Add((split[0].Trim(), nextId));
         }
-
         return choices;
     }
 
-    /// <summary>
-    /// ÇöÀç ´ë»ç¸¦ ¹İÈ¯ÇÏ´Â ÇÔ¼ö (¿ÜºÎ ÂüÁ¶¿ë)
-    /// </summary>
     public Dialogue GetCurrentLine()
     {
-        return dialogueMap.ContainsKey(currentId) ? dialogueMap[currentId] : null;
+        return (dialogueMap != null && dialogueMap.ContainsKey(currentId)) ? dialogueMap[currentId] : null;
     }
 }

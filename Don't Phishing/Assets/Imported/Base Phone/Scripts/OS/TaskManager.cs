@@ -67,8 +67,14 @@ public class TaskManager
 
     private void UpdateTaskBarVisibility()
     {
+        // 이제 여기서 SetActive를 직접 제어하지 않고, OSManager의 상태에 따라 결정되도록 합니다.
+        // (필요 시 TaskManager.Show() 같은 메서드를 따로 호출)
+    }
+
+    public void ShowTaskBar(bool show)
+    {
         if (provider != null && provider.TaskBar != null)
-            provider.TaskBar.SetActive(tasks.Count > 0);
+            provider.TaskBar.SetActive(show); // 리스트가 없어도 일단 창은 띄움
     }
 
     public void RunningApp()

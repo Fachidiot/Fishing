@@ -11,7 +11,14 @@ public class DialogueProvider : MonoBehaviour
     private DialogueController controller = null;
     private DialogueTagProcessor tagProcessor = null;
 
-    public DialogueController Controller => controller;
+    public DialogueController Controller
+    {
+        get
+        {
+            if (controller == null) Initialize();
+            return controller;
+        }
+    }
 
     private void Awake()
     {

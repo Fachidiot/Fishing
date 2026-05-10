@@ -86,7 +86,7 @@ public class SMSManager : BaseAppManager
 
 
 
-    // TODO : ÃßÈÄ °ÔÀÓ ÀüÃ¼(ÈŞ´ëÆù Á¦¿Ü) LocalizationÀ» À§ÇØ Messages-en, Messages-kr, Messages-jpÀÌ·±½ÄÀ¸·Î ±¸ÇöÇÏ¸é ÁÁÀ»µí ½ÍÀ½.
+    // TODO : ì¶”í›„ ê²Œì„ ì „ì²´(íœ´ëŒ€í° ì œì™¸) Localizationì„ ìœ„í•´ Messages-en, Messages-kr, Messages-jpì´ëŸ°ì‹ìœ¼ë¡œ êµ¬í˜„í•˜ë©´ ì¢‹ì„ë“¯ ì‹¶ìŒ.
     private string m_FileName = "Messages.json";
     private string m_Path = Application.dataPath + "/Resources/Json/Messages/";
 
@@ -133,7 +133,7 @@ public class SMSManager : BaseAppManager
         if (m_AutoSave)
             SaveMessages();
 
-        // NPCÀÏ °æ¿ì ¸¶Áö¸· ¸Ş½ÃÁö Ä³½Ì
+        // NPCì¼ ê²½ìš° ë§ˆì§€ë§‰ ë©”ì‹œì§€ ìºì‹±
         if (!isMine && go != null)
             _lastNPCLayout = go.GetComponent<Message_Layout>();
     }
@@ -142,12 +142,12 @@ public class SMSManager : BaseAppManager
     {
         DeletePrev();
 
-        // View ¼³Á¤
+        // View ì„¤ì •
         m_MainBar.SetActive(false);
         m_MessageBar.SetActive(true);
         m_HorizontalSnapScrollView.GetComponent<ScrollSnap>().SetContentPosition(1);
 
-        // ¸Ş¼¼Áö »ı¼º
+        // ë©”ì„¸ì§€ ìƒì„±
         for (int i = 0; i < list.Count; i++)
         {
             InstantiateMessage(list[i], list[i].name == "Mine");
@@ -190,32 +190,32 @@ public class SMSManager : BaseAppManager
 
         if (File.Exists(m_Path + m_FileName))
         {
-            // 1. JSON ÀĞ±â
+            // 1. JSON ì½ê¸°
             string data = File.ReadAllText(m_Path + m_FileName);
             Debug.Log("[SMSManager] Raw JSON:\n" + data);
 
-            // 2. ÆÄ½Ì ½Ãµµ
+            // 2. íŒŒì‹± ì‹œë„
             m_MessageDB = JsonUtility.FromJson<MessageDB>(data);
 
-            // 3. ÆÄ½Ì °ËÁõ
+            // 3. íŒŒì‹± ê²€ì¦
             if (m_MessageDB == null)
             {
-                Debug.LogError("FromJson ½ÇÆĞ: m_MessageDB == null");
+                Debug.LogError("FromJson ì‹¤íŒ¨: m_MessageDB == null");
                 return;
             }
             if (m_MessageDB.messages == null)
             {
-                Debug.LogError("FromJson ½ÇÆĞ: messages ÇÊµå°¡ null");
+                Debug.LogError("FromJson ì‹¤íŒ¨: messages í•„ë“œê°€ null");
                 return;
             }
 
-            // 4. Á¤»óÀûÀ¸·Î ·ÎµåµÈ °æ¿ì
+            // 4. ì •ìƒì ìœ¼ë¡œ ë¡œë“œëœ ê²½ìš°
             foreach (var message in m_MessageDB.messages)
             {
                 InstantiatePreview(message);
             }
 
-            Debug.Log($"[SMSManager] ¸Ş½ÃÁö {m_MessageDB.messages.Count}°³ ·Îµå ¿Ï·á");
+            Debug.Log($"[SMSManager] ë©”ì‹œì§€ {m_MessageDB.messages.Count}ê°œ ë¡œë“œ ì™„ë£Œ");
         }
         else
         {
@@ -260,17 +260,17 @@ public class SMSManager : BaseAppManager
         }
         else
         {
-            //  ÀÌ¹ÌÁö ¸®¼Ò½º°¡ Á¸ÀçÇÏ´ÂÁö °Ë»ç
+            //  ì´ë¯¸ì§€ ë¦¬ì†ŒìŠ¤ê°€ ì¡´ì¬í•˜ëŠ”ì§€ ê²€ì‚¬
             Sprite sprite = Resources.Load<Sprite>(message.message);
 
             if (sprite != null)
             {
-                // ÀÌ¹ÌÁö ¸Ş½ÃÁö ÇÁ¸®ÆÕ
+                // ì´ë¯¸ì§€ ë©”ì‹œì§€ í”„ë¦¬íŒ¹
                 go = Instantiate(m_IMGMessagePrefab, m_MessageParent.transform);
             }
             else
             {
-                // ÀÏ¹İ ÅØ½ºÆ® ¸Ş½ÃÁö ÇÁ¸®ÆÕ
+                // ì¼ë°˜ í…ìŠ¤íŠ¸ ë©”ì‹œì§€ í”„ë¦¬íŒ¹
                 go = Instantiate(m_NPCMessagePrefab, m_MessageParent.transform);
             }
         }
@@ -297,7 +297,7 @@ public class SMSManager : BaseAppManager
         m_MessageList.Clear();
     }
 
-    // SMSManager.cs ¾È¿¡ Ãß°¡
+    // SMSManager.cs ì•ˆì— ì¶”ê°€
     public void UpdateLastNPCMessage(string message)
     {
         if (m_MessageList.Count == 0)
@@ -311,7 +311,7 @@ public class SMSManager : BaseAppManager
 
     #region Dialaouge
 
-    // ¹öÆ° ¼±ÅÃ
+    // ë²„íŠ¼ ì„ íƒ
     public void DisplayChoiceButtons(List<(string text, int nextId)> choices)
     {
         ClearFixedButtons();
@@ -338,7 +338,7 @@ public class SMSManager : BaseAppManager
                 if (dialogueController != null)
                     dialogueController.ProceedNext(nextId);
                 else
-                    Debug.LogWarning("DialogueController°¡ ¿¬°áµÇ¾î ÀÖÁö ¾Ê½À´Ï´Ù.");
+                    Debug.LogWarning("DialogueControllerê°€ ì—°ê²°ë˜ì–´ ìˆì§€ ì•ŠìŠµë‹ˆë‹¤.");
             });
         }
     }
@@ -358,7 +358,7 @@ public class SMSManager : BaseAppManager
     {
         if (buttonObj == null)
         {
-            Debug.LogWarning("SetupChoiceButton È£ÃâµÊ: buttonObj°¡ nullÀÔ´Ï´Ù.");
+            Debug.LogWarning("SetupChoiceButton í˜¸ì¶œë¨: buttonObjê°€ nullì…ë‹ˆë‹¤.");
             return;
         }
 
@@ -366,12 +366,12 @@ public class SMSManager : BaseAppManager
         if (tmpText != null)
             tmpText.text = text;
         else
-            Debug.LogWarning("¹öÆ°¿¡ TMP_Text ÄÄÆ÷³ÍÆ®°¡ ¾ø½À´Ï´Ù.");
+            Debug.LogWarning("ë²„íŠ¼ì— TMP_Text ì»´í¬ë„ŒíŠ¸ê°€ ì—†ìŠµë‹ˆë‹¤.");
 
         Button button = buttonObj.GetComponent<Button>();
         if (button == null)
         {
-            Debug.LogWarning("¹öÆ°¿¡ Button ÄÄÆ÷³ÍÆ®°¡ ¾ø½À´Ï´Ù.");
+            Debug.LogWarning("ë²„íŠ¼ì— Button ì»´í¬ë„ŒíŠ¸ê°€ ì—†ìŠµë‹ˆë‹¤.");
             return;
         }
 
@@ -384,27 +384,27 @@ public class SMSManager : BaseAppManager
             if (dialogueController != null)
                 dialogueController.ProceedNext(nextId);
             else
-                Debug.LogWarning("DialogueController°¡ ¿¬°áµÇ¾î ÀÖÁö ¾Ê½À´Ï´Ù.");
+                Debug.LogWarning("DialogueControllerê°€ ì—°ê²°ë˜ì–´ ìˆì§€ ì•ŠìŠµë‹ˆë‹¤.");
         });
     }
 
-    // ´ëÈ­ ÀúÀå ½½·Ô ÀúÀå
+    // ëŒ€í™” ì €ì¥ ìŠ¬ë¡¯ ì €ì¥
     public void SaveDialogueSlot(string eventName, int currentId, int slotIndex)
     {
         DialogueSaveData saveData = new DialogueSaveData(eventName, currentId);
         string path = Path.Combine(Application.persistentDataPath, $"save_slot_{slotIndex}.json");
         string json = JsonUtility.ToJson(saveData, true);
         File.WriteAllText(path, json);
-        Debug.Log($"[SMSManager] ÀúÀå ¿Ï·á: ½½·Ô {slotIndex} / ÀÌº¥Æ®: {eventName} / ID: {currentId}");
+        Debug.Log($"[SMSManager] ì €ì¥ ì™„ë£Œ: ìŠ¬ë¡¯ {slotIndex} / ì´ë²¤íŠ¸: {eventName} / ID: {currentId}");
     }
 
-    // ´ëÈ­ ÀúÀå ½½·Ô ºÒ·¯¿À±â
+    // ëŒ€í™” ì €ì¥ ìŠ¬ë¡¯ ë¶ˆëŸ¬ì˜¤ê¸°
     public DialogueSaveData LoadDialogueSlot(int slotIndex)
     {
         string path = Path.Combine(Application.persistentDataPath, $"save_slot_{slotIndex}.json");
         if (!File.Exists(path))
         {
-            Debug.LogWarning($"[SMSManager] ½½·Ô {slotIndex}¿¡ ÀúÀåµÈ µ¥ÀÌÅÍ°¡ ¾ø½À´Ï´Ù.");
+            Debug.LogWarning($"[SMSManager] ìŠ¬ë¡¯ {slotIndex}ì— ì €ì¥ëœ ë°ì´í„°ê°€ ì—†ìŠµë‹ˆë‹¤.");
             return null;
         }
 

@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44d089d8c4991459c937a42dac189070, type: 3}
+  m_Name: Safari
+  m_EditorClassIdentifier: Assembly-CSharp::AppData
+  m_AppID: Safari
+  m_AppName:
+    m_English: Safari
+    m_Korean: "\uC0AC\uD30C\uB9AC"
+    m_Japanese: "\uB9AC"
+  m_Icon: {fileID: 21300000, guid: a76ca201bf6d71541b940968ce34e053, type: 3}

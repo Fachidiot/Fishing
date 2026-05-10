@@ -13,7 +13,6 @@ public class GameFlowManager
 
     private IngameDialogueController storyController = null;
     private DialogueController messageController = null;
-    private List<DialogueEvent> dialogueEvents = null;
     private GameState currentState = GameState.Day1;
 
     public static GameFlowManager Instance
@@ -36,15 +35,17 @@ public class GameFlowManager
     /// <summary>
     /// 매니저 초기화 함수입니다. 외부(AppEntryPoint 등)에서 호출됩니다.
     /// </summary>
-    public void Initialize(IngameDialogueController story, DialogueController message, List<DialogueEvent> events)
+    public void Initialize(IngameDialogueController story, DialogueController message)
     {
         this.storyController = story;
         this.messageController = message;
-        this.dialogueEvents = events;
 
         Debug.Log("[GameFlowManager] 초기화 완료");
-        
-        // 현재 저장된 날짜에 따라 상태 설정
+    }
+
+    public void StartGame()
+    {
+        // 현재 저장된 날짜에 따라 상태 설정 및 대화 시작
         SetStateByDay(DayProgressManager.Instance.CurrentDay);
     }
 
@@ -67,7 +68,7 @@ public class GameFlowManager
         switch (newState)
         {
             case GameState.Day1:
-                StartStory("ch01_intro"); // 더 명확한 시나리오 이름 사용
+                StartStory("ch01_intro"); 
                 break;
             case GameState.Day2:
                 StartStory("ch02_main");
@@ -78,32 +79,17 @@ public class GameFlowManager
         }
     }
 
-    private void StartStory(string chapterKeyword)
+    private void StartStory(string conversationTitle)
     {
-        var story = GetDialogueEvent(chapterKeyword);
-        if (story != null && storyController != null)
+        if (storyController != null)
         {
-            Debug.Log($"[GameFlowManager] 스토리 시작: {chapterKeyword}");
-            storyController.StartDialogue(story);
+            Debug.Log($"[GameFlowManager] 스토리 시작 시도: {conversationTitle}");
+            storyController.StartDialogue(conversationTitle);
         }
         else
         {
-            // Dialogue System for Unity 모드에서는 에셋 데이터베이스에 
-            // chapterKeyword와 일치하는 Conversation이 있는지 확인해야 함
-            Debug.LogWarning($"[GameFlowManager] 스토리 '{chapterKeyword}'를 찾을 수 없거나 데이터베이스 확인이 필요합니다.");
+            Debug.LogError($"[GameFlowManager] storyController(IngameDialogueController)가 할당되지 않았습니다!");
         }
-    }
-
-    private DialogueEvent GetDialogueEvent(string partialName)
-    {
-        if (dialogueEvents == null) return null;
-
-        foreach (var evt in dialogueEvents)
-        {
-            if (evt != null && evt.name.ToLower().Contains(partialName.ToLower()))
-                return evt;
-        }
-        return null;
     }
 
     public void OnAppMessageTag()

@@ -4,8 +4,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// ´ë»ç ³» ÅÂ±×¸¦ ÆÄ½ÌÇÏ°í ¼øÂ÷ÀûÀ¸·Î Ã³¸®ÇÏ´Â ÅÂ±× Ã³¸®±â
-/// WAIT, FLAG, CHECK_FLAG, ANIM, Image µîÀ» Áö¿ø
+/// ëŒ€ì‚¬ ë‚´ íƒœê·¸ë¥¼ íŒŒì‹±í•˜ê³  ìˆœì°¨ì ìœ¼ë¡œ ì²˜ë¦¬í•˜ëŠ” íƒœê·¸ ì²˜ë¦¬ê¸°
+/// WAIT, FLAG, CHECK_FLAG, ANIM, Image ë“±ì„ ì§€ì›
 /// </summary>
 public class DialogueTagProcessor
 {
@@ -14,10 +14,10 @@ public class DialogueTagProcessor
     private MonoBehaviour coroutineHost;
 
     /// <summary>
-    /// ÅÂ±× Ã³¸®±â »ı¼ºÀÚ
+    /// íƒœê·¸ ì²˜ë¦¬ê¸° ìƒì„±ì
     /// </summary>
-    /// <param name="animator">¾Ö´Ï¸ŞÀÌ¼Ç ÅÂ±×¿ë Animator</param>
-    /// <param name="host">ÄÚ·çÆ¾ ½ÇÇà¿ë MonoBehaviour</param>
+    /// <param name="animator">ì• ë‹ˆë©”ì´ì…˜ íƒœê·¸ìš© Animator</param>
+    /// <param name="host">ì½”ë£¨í‹´ ì‹¤í–‰ìš© MonoBehaviour</param>
     public DialogueTagProcessor(Animator animator = null, MonoBehaviour host = null)
     {
         this.animator = animator;
@@ -25,7 +25,7 @@ public class DialogueTagProcessor
     }
 
     /// <summary>
-    /// ÅÂ±× ¹®ÀÚ¿­ ÀüÃ¼ Ã³¸® ½ÃÀÛ
+    /// íƒœê·¸ ë¬¸ìì—´ ì „ì²´ ì²˜ë¦¬ ì‹œì‘
     /// </summary>
     public void Process(string tagString, Action onComplete)
     {
@@ -40,7 +40,7 @@ public class DialogueTagProcessor
     }
 
     /// <summary>
-    /// ÅÂ±×µéÀ» ¼øÂ÷ÀûÀ¸·Î Ã³¸® (WAIT µî °í·Á)
+    /// íƒœê·¸ë“¤ì„ ìˆœì°¨ì ìœ¼ë¡œ ì²˜ë¦¬ (WAIT ë“± ê³ ë ¤)
     /// </summary>
     private void ProcessTagsSequentially(string[] tags, int index, Action onComplete)
     {
@@ -70,7 +70,7 @@ public class DialogueTagProcessor
 
             case "CHECK_FLAG":
                 if (!CheckFlag(value))
-                    onComplete?.Invoke(); // Á¶°Ç ½ÇÆĞ ½Ã Áß´Ü
+                    onComplete?.Invoke(); // ì¡°ê±´ ì‹¤íŒ¨ ì‹œ ì¤‘ë‹¨
                 else
                     ProcessTagsSequentially(tags, index + 1, onComplete);
                 break;
@@ -81,19 +81,19 @@ public class DialogueTagProcessor
                 break;
 
             case "Image":
-                SMSManager.Instance?.SaveMessage(value, false); // ÀÌ¹ÌÁö ¸Ş½ÃÁö Àü¼Û
+                SMSManager.Instance?.SaveMessage(value, false); // ì´ë¯¸ì§€ ë©”ì‹œì§€ ì „ì†¡
                 ProcessTagsSequentially(tags, index + 1, onComplete);
                 break;
 
             default:
-                Debug.LogWarning($"[TagProcessor] Áö¿øÇÏÁö ¾Ê´Â ÅÂ±×: {tagType}");
+                Debug.LogWarning($"[TagProcessor] ì§€ì›í•˜ì§€ ì•ŠëŠ” íƒœê·¸: {tagType}");
                 ProcessTagsSequentially(tags, index + 1, onComplete);
                 break;
         }
     }
 
     /// <summary>
-    /// ´ë±â ½Ã°£ ÈÄ ´ÙÀ½ ÅÂ±×·Î ÀÌµ¿ÇÏ´Â ÄÚ·çÆ¾
+    /// ëŒ€ê¸° ì‹œê°„ í›„ ë‹¤ìŒ íƒœê·¸ë¡œ ì´ë™í•˜ëŠ” ì½”ë£¨í‹´
     /// </summary>
     private IEnumerator WaitAndNext(float seconds, Action callback)
     {
@@ -102,12 +102,12 @@ public class DialogueTagProcessor
     }
 
     /// <summary>
-    /// ³»ºÎ ÇÃ·¡±× °ª ¼³Á¤
+    /// ë‚´ë¶€ í”Œë˜ê·¸ ê°’ ì„¤ì •
     /// </summary>
     private void SetFlag(string name, bool value) => flags[name] = value;
 
     /// <summary>
-    /// ³»ºÎ ÇÃ·¡±× °ª È®ÀÎ
+    /// ë‚´ë¶€ í”Œë˜ê·¸ ê°’ í™•ì¸
     /// </summary>
     private bool CheckFlag(string name) => flags.TryGetValue(name, out bool v) && v;
 }

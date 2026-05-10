@@ -14,12 +14,10 @@ public class AppEntryPoint : MonoBehaviour
     [Header("Providers Reference")]
     [SerializeField] private IngameDialogueProvider storyProvider = null;
     [SerializeField] private DialogueProvider messageProvider = null;
+    [SerializeField] private ScreenFader screenFader = null;
 
     [Header("Input Settings")]
     [SerializeField] private InputActionAsset inputActions = null;
-
-    [Header("Dialogue Data")]
-    [SerializeField] private List<DialogueEvent> dialogueEvents = new List<DialogueEvent>();
 
     private void Awake()
     {
@@ -58,9 +56,22 @@ public class AppEntryPoint : MonoBehaviour
         {
             GameFlowManager.Instance.Initialize(
                 storyProvider.Controller,
-                messageProvider.Controller,
-                dialogueEvents
+                messageProvider.Controller
             );
+        }
+
+        // 씬 시작 페이드 효과 및 대화 시작 시퀀스
+        if (screenFader != null)
+        {
+            screenFader.FadeIn(1.5f, () => {
+                Debug.Log("[AppEntryPoint] 페이드 인 완료, 시나리오를 시작합니다.");
+                GameFlowManager.Instance.StartGame();
+            });
+        }
+        else
+        {
+            // 페이드 페이더가 없는 경우 즉시 시작
+            GameFlowManager.Instance.StartGame();
         }
 
         Debug.Log("[AppEntryPoint] 모든 매니저가 초기화되었습니다.");

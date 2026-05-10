@@ -12,6 +12,10 @@ public class AppManager : IDisposable
     private AppProvider provider = null;
     private bool isDisposed = false;
 
+    // 앱 ID별 알림 개수 관리
+    private Dictionary<string, int> appNotifications = new Dictionary<string, int>();
+    public event Action<string, int> OnNotificationChanged = null;
+
     public static AppManager Instance
     {
         get
@@ -52,22 +56,33 @@ public class AppManager : IDisposable
         return string.Empty;
     }
 
-    public void RunApp(string name)
+    public void RunApp(string appID)
     {
         if (provider == null) return;
+        
+        Debug.Log($"[AppManager] 앱 실행 시도: {appID}");
         
         OSManager.Instance.RunApp();
         
         if (provider.AppScreenContainer != null)
             provider.AppScreenContainer.SetActive(true);
 
+        bool found = false;
         foreach (var app in provider.Apps)
         {
-            if (app != null && app.name == name + " Screen")
+            if (app != null && (app.name.Equals(appID, StringComparison.OrdinalIgnoreCase) || 
+                               app.name.Equals(appID + " Screen", StringComparison.OrdinalIgnoreCase)))
             {
                 app.SetActive(true);
+                found = true;
+                Debug.Log($"[AppManager] '{app.name}' 활성화 완료");
                 break;
             }
+        }
+
+        if (!found)
+        {
+            Debug.LogWarning($"[AppManager] '{appID}' 또는 '{appID} Screen' 이라는 이름의 앱 화면 오브젝트를 찾을 수 없습니다.");
         }
     }
 
@@ -96,4 +111,23 @@ public class AppManager : IDisposable
             }
         }
     }
+
+    #region Notifications
+    public void SetNotification(string appID, int count)
+    {
+        appNotifications[appID] = count;
+        OnNotificationChanged?.Invoke(appID, count);
+    }
+
+    public void AddNotification(string appID, int addCount)
+    {
+        int current = GetNotification(appID);
+        SetNotification(appID, current + addCount);
+    }
+
+    public int GetNotification(string appID)
+    {
+        return appNotifications.TryGetValue(appID, out int count) ? count : 0;
+    }
+    #endregion
 }

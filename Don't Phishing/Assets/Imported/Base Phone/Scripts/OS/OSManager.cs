@@ -4,7 +4,7 @@ using TMPro;
 using UnityEngine;
 
 public enum Language { English, Korean, Japanese }
-public enum Status { Idle, Notification, Control, RunApp }
+public enum Status { Idle, Notification, Control, RunApp, Task }
 
 /// <summary>
 /// 핸드폰 OS의 핵심 로직을 담당하는 순수 C# 매니저 클래스입니다.
@@ -70,6 +70,13 @@ public class OSManager : IDisposable
     private void UpdateUIByStatus()
     {
         if (provider == null) return;
+
+        // 배경화면 제어: 앱 실행(RunApp) 중일 때만 비활성화, 그 외에는 활성화
+        if (provider.Background != null)
+        {
+            provider.Background.gameObject.SetActive(currentStatus != Status.RunApp);
+        }
+
         switch (currentStatus)
         {
             case Status.Idle:
@@ -86,6 +93,18 @@ public class OSManager : IDisposable
                 if (provider.BottomBar != null) provider.BottomBar.SetActive(true);
                 provider.MainScreen.SetActive(false);
                 break;
+            case Status.Task:
+                if (provider.BottomBar != null) provider.BottomBar.SetActive(true);
+                provider.MainScreen.SetActive(false);
+                // Task 상태일 때만 TaskBar를 확실히 켜줌
+                TaskManager.Instance.ShowTaskBar(true);
+                break;
+        }
+
+        // Task 상태가 아닐 때는 TaskBar를 항상 꺼줌 (Idle이나 RunApp 등으로 전환 시)
+        if (currentStatus != Status.Task)
+        {
+            TaskManager.Instance.ShowTaskBar(false);
         }
     }
 
@@ -97,6 +116,9 @@ public class OSManager : IDisposable
 
     private void CheckStatus()
     {
+        // 앱 실행 중이거나 Task 창이 열려 있을 때는 다른 상태로 전이되지 않도록 보호
+        if (currentStatus == Status.RunApp || currentStatus == Status.Task) return;
+
         if (controlSnap != null && controlSnap.GetCurrentItem() == 2)
         {
             currentStatus = Status.Control;
@@ -107,12 +129,23 @@ public class OSManager : IDisposable
             currentStatus = Status.Notification;
             return;
         }
-        if (currentStatus == Status.RunApp) return;
+        
         currentStatus = Status.Idle;
     }
 
     public void RunApp() => currentStatus = Status.RunApp;
-    public void EndApp() => currentStatus = Status.Idle;
+    
+    public void EndApp()
+    {
+        currentStatus = Status.Idle;
+        // 홈 화면으로 돌아가는 애니메이션 재생
+        if (provider != null && provider.MainAnimator != null)
+        {
+            provider.MainAnimator.SetTrigger("AppToHome");
+        }
+    }
+
+    public void SetTaskStatus() => currentStatus = Status.Task;
     public Language GetLanguage() => language;
 
     public void SetLanguage(int langIndex)

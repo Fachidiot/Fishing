@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44d089d8c4991459c937a42dac189070, type: 3}
+  m_Name: Music
+  m_EditorClassIdentifier: Assembly-CSharp::AppData
+  m_AppID: Music
+  m_AppName:
+    m_English: Music
+    m_Korean: "\uC74C\uC545"
+    m_Japanese: "\uC77C"
+  m_Icon: {fileID: 21300000, guid: c4bef146bb123724ebc558e0182b22b4, type: 3}

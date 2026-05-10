@@ -10,7 +10,14 @@ public class IngameDialogueProvider : MonoBehaviour
     
     private IngameDialogueController controller = null;
 
-    public IngameDialogueController Controller => controller;
+    public IngameDialogueController Controller
+    {
+        get
+        {
+            if (controller == null) Initialize();
+            return controller;
+        }
+    }
 
     private void Awake()
     {

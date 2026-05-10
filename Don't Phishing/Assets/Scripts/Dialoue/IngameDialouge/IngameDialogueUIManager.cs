@@ -119,6 +119,15 @@ public class IngameDialogueUIManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 대화 박스 및 선택지를 포함한 전체 UI 숨기기
+    /// </summary>
+    public void HideUI()
+    {
+        HideDialogueBox();
+        HideChoices();
+    }
+
+    /// <summary>
     /// 대화 박스 숨기기
     /// </summary>
     public void HideDialogueBox()

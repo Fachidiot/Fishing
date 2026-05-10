@@ -31,7 +31,7 @@ public class DialogueTrigger : MonoBehaviour
     {
         if (provider != null && provider.Controller != null && dialogue != null)
         {
-            provider.Controller.StartDialogue(dialogue);
+            provider.Controller.StartDialogue(dialogue.name);
         }
     }
 }

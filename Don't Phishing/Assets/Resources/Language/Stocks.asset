@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44d089d8c4991459c937a42dac189070, type: 3}
+  m_Name: Stocks
+  m_EditorClassIdentifier: Assembly-CSharp::AppData
+  m_AppID: Stocks
+  m_AppName:
+    m_English: Stocks
+    m_Korean: "\uC8FC\uC2DD"
+    m_Japanese: "\uC2DD"
+  m_Icon: {fileID: 21300000, guid: 8062e8d694676064cb8e78763641edef, type: 3}

@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44d089d8c4991459c937a42dac189070, type: 3}
+  m_Name: Photos
+  m_EditorClassIdentifier: Assembly-CSharp::AppData
+  m_AppID: Photos
+  m_AppName:
+    m_English: Photos
+    m_Korean: "\uC0AC\uC9C4"
+    m_Japanese: "\uC9C4"
+  m_Icon: {fileID: 21300000, guid: 79833eb380dcbaa4f90e079708865d1a, type: 3}

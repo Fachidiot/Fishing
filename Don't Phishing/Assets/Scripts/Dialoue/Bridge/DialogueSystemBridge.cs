@@ -71,7 +71,11 @@ public class DialogueSystemBridge : MonoBehaviour
 
     public void OnConversationEnd(Transform actor)
     {
-        inGameUI.HideChoices();
-        Debug.Log("[DialogueSystemBridge] 대화 종료 이벤트 수신");
+        if (inGameUI != null)
+        {
+            inGameUI.HideChoices();
+            inGameUI.HideUI(); // 전체 대화 UI 비활성화
+        }
+        Debug.Log("[DialogueSystemBridge] 대화 종료: UI 비활성화 완료");
     }
 }
